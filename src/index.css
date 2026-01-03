@@ -1,14 +1,14 @@
 :root {
-  --bg-dark: oklch(0.1 0 340);
-  --bg: oklch(0.15 0 340);
-  --bg-light: oklch(0.2 0 340);
+  --bg-dark: oklch(0.15 0 340);
+  --bg: oklch(0.2 0 340);
+  --bg-light: oklch(0.25 0 340);
   --text: oklch(0.96 0 340);
   --text-muted: oklch(0.76 0 340);
   --highlight: oklch(0.5 0 340);
   --border: oklch(0.4 0 340);
   --border-muted: oklch(0.3 0 340);
-  --primary: oklch(0.76 0.2 236);
-  --secondary: oklch(0.76 0.2 56);
+  --primary: oklch(75.536% 0.15349 231.667 / 0.9);
+  --secondary: oklch(0.76 0.2 56/ 0.9);
   --danger: oklch(69.573% 0.19521 30.302 / 0.5);
   --warning: oklch(0.7 0.2 100);
   --success: oklch(71.529% 0.17562 155.376 / 0.5);
@@ -16,42 +16,59 @@
   --default-border-radius: 15px;
   --small: 0.75rem;
   --default: 1rem;
-  --big: 1.5rem;
+  --big: 1.25rem;
 }
 
 * {
   margin: 0;
   padding: 0;
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Lato, sans-serif;
   font-size: var(--default);
 }
 
 button {
   border: none;
   cursor: pointer;
+  border-radius: 10px;
+  background-color: var(--primary);
 }
 
-body {
+body,
+#root {
+  width: 100vw;
+  min-height: 100vh;
   background-color: var(--bg-dark);
-  display: flex;
-  justify-content: center;
+  overflow-x: hidden;
+}
+
+#backgroundContainer {
+  position: absolute;
+  width: 100vw;
+  height: 70vh;
+  background-image: url(assets/banner.svg);
+  background-repeat: no-repeat;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+}
+
+.card {
+  background-color: var(--bg);
+  border-radius: var(--default-border-radius);
   overflow: hidden;
 }
 
 #mainContainer {
-  margin-top: 50vh;
-  translate: 0 -50%;
-  width: clamp(350px, 90vw, 900px);
-  background-color: var(--bg);
-  border-radius: var(--default-border-radius);
+  width: clamp(350px, 90vw, 800px);
+  position: absolute;
+  top: 20vh;
+  left: 50vw;
+  height: auto;
+  translate: -50%;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  box-sizing: border-box;
+  gap: 2rem;
   padding: 2rem;
-  gap: 3rem;
 }
 
 .Racetrack {
@@ -70,13 +87,13 @@ body {
   position: absolute;
   left: calc(100% * var(--progress));
   transform: translateX(calc(-100% * var(--progress)));
-
   height: 100%;
   aspect-ratio: 1;
   background-image: url("assets/basic-red.svg");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom;
+  transition: 0.1s;
 }
 
 .Racetrack > :nth-child(2) {
@@ -99,23 +116,19 @@ body {
 
 #textDisplay > * {
   font-size: var(--big);
+  font-family: monospace;
+  position: relative;
 }
 
 #textBox {
   border: 2px solid var(--border-muted);
   background-color: transparent;
   padding: 0.5rem;
+  font-family: monospace;
 }
 
 #textBox.incorrect {
-  background-color: var(--danger);
-}
-
-#againButton {
-  width: 10rem;
-  height: 3rem;
-  border-radius: 10px;
-  background-color: var(--primary);
+  background-color: #f0a3a3;
 }
 
 #textBox:focus {
@@ -123,13 +136,68 @@ body {
 }
 
 .correct {
-  background-color: var(--success);
+  color: #99cc00;
 }
 
 .incorrect {
-  background-color: var(--danger);
+  color: #803333;
+  background-color: #f0a3a3;
 }
 
 .underline {
   text-decoration: underline;
+}
+
+.blinker::before {
+  content: "";
+  position: absolute;
+  right: -2px;
+  height: 100%;
+  width: 3px;
+  background-color: white;
+  border-radius: 25px;
+  animation: blink 1s ease infinite;
+}
+
+@keyframes blink {
+  from,
+  to {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+#raceButtonsContainer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mediumButton {
+  width: 10rem;
+  height: 3rem;
+}
+
+#raceAgainButton {
+  background-color: var(--secondary);
+}
+
+#infoCard {
+  border: 1px solid var(--bg-light);
+}
+
+#infoCard > :first-child {
+  padding: 1rem;
+  background-color: var(--bg-light);
+  font-weight: bold;
+}
+
+#infoContent {
+  padding: 2rem;
+}
+
+#infoContent > :first-child {
+  display: flex;
+  justify-content: space-between;
 }

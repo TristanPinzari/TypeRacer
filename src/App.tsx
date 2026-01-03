@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Racetrack from "./components/Racetrack";
 
 function App() {
@@ -10,9 +10,16 @@ function App() {
   const timeRef = useRef(0);
   const totalCorrectCharsRef = useRef(0);
 
-  const text =
-    "Betty decided to write a short story and she was sure it was going to be amazing.";
-  const textSplitted = text.split(" ");
+  const [writing, setWriting] = useState({
+    text: "Betty decided to write a short story and she was sure it was going to be amazing.",
+    origin: "Random text generator",
+    author: "i don't know",
+    uploader: "Me (Tristan)",
+  });
+
+  const textSplitted = useMemo(() => {
+    return writing.text.split(" ");
+  }, [writing.text]);
 
   function getDisplayData(input: string, index: number) {
     const currentWord = textSplitted[index] || "";
@@ -27,54 +34,57 @@ function App() {
         break;
       }
     }
+    if (incorrectStartIndex == null && currentWord.length < input.length) {
+      incorrectStartIndex = currentWord.length;
+    }
 
     let correctUnderline,
       incorrectUnderline,
       untypedUnderline,
       incorrectWords,
       untypedWords;
-    const correctWords = text.slice(0, wordStartIndex);
+    const correctWords = writing.text.slice(0, wordStartIndex);
 
     if (incorrectStartIndex == null) {
-      correctUnderline = text.slice(
+      correctUnderline = writing.text.slice(
         wordStartIndex,
         wordStartIndex + input.length
       );
       incorrectUnderline = "";
-      untypedUnderline = text.slice(
+      untypedUnderline = writing.text.slice(
         wordStartIndex + input.length,
         wordEndIndex
       );
       incorrectWords = "";
-      untypedWords = text.slice(wordEndIndex);
+      untypedWords = writing.text.slice(wordEndIndex);
     } else {
-      correctUnderline = text.slice(
+      correctUnderline = writing.text.slice(
         wordStartIndex,
         wordStartIndex + incorrectStartIndex
       );
-      incorrectUnderline = text.slice(
+      incorrectUnderline = writing.text.slice(
         wordStartIndex + incorrectStartIndex,
         wordStartIndex + Math.min(currentWord.length, input.length)
       );
-      untypedUnderline = text.slice(
+      untypedUnderline = writing.text.slice(
         wordStartIndex + Math.min(currentWord.length, input.length),
         wordEndIndex
       );
       incorrectWords =
         input.length > currentWord.length
-          ? text.slice(wordEndIndex, wordStartIndex + input.length)
+          ? writing.text.slice(wordEndIndex, wordStartIndex + input.length)
           : "";
-      untypedWords = text.slice(
+      untypedWords = writing.text.slice(
         wordStartIndex + Math.max(currentWord.length, input.length)
       );
     }
 
     const progress =
-      (correctWords.length + correctUnderline.length) / text.length;
+      (correctWords.length + correctUnderline.length) / writing.text.length;
 
     if (progress === 1) {
       return {
-        correctWords: text,
+        correctWords: writing.text,
         correctUnderline: "",
         incorrectUnderline: "",
         untypedUnderline: "",
@@ -166,42 +176,80 @@ function App() {
   }
 
   return (
-    <div id="mainContainer">
-      <Racetrack wpm={wpm} progress={displayData.progress} />
-      <div id="secondaryContainer">
-        <p id="textDisplay">
-          <span className="correct">{displayData.correctWords}</span>
-          <span className="correct underline">
-            {displayData.correctUnderline}
-          </span>
-          <span className="incorrect underline">
-            {displayData.incorrectUnderline}
-          </span>
-          <span className="underline">{displayData.untypedUnderline}</span>
-          <span className="incorrect">{displayData.incorrectWords}</span>
-          <span>{displayData.untypedWords}</span>
-        </p>
-        <input
-          id="textBox"
-          className={
-            displayData.incorrectWords.length +
-              displayData.incorrectUnderline.length >
-            0
-              ? "incorrect"
-              : ""
-          }
-          value={displayData.progress === 1 ? "" : textBoxInput}
-          onChange={HandleChange}
-          onCopy={(e) => e.preventDefault()}
-          onPaste={(e) => e.preventDefault()}
-          onCut={(e) => e.preventDefault()}
-          disabled={displayData.progress === 1}
-        />
-        <button id="againButton" onClick={reset}>
-          Play again
-        </button>
+    <>
+      <div id="backgroundContainer" />
+      <div id="mainContainer" className="card">
+        <Racetrack wpm={wpm} progress={displayData.progress} />
+        <div
+          id="secondaryContainer"
+          style={{ display: displayData.progress == 1 ? "none" : "flex" }}
+        >
+          <p id="textDisplay">
+            <span className="correct">{displayData.correctWords}</span>
+            <span className="correct underline">
+              {displayData.correctUnderline}
+            </span>
+            <span className="incorrect underline">
+              {displayData.incorrectUnderline}
+            </span>
+            <span className="underline">{displayData.untypedUnderline}</span>
+            <span className="incorrect">{displayData.incorrectWords}</span>
+            <span>{displayData.untypedWords}</span>
+          </p>
+          <input
+            id="textBox"
+            className={
+              displayData.incorrectWords.length +
+                displayData.incorrectUnderline.length >
+              0
+                ? "incorrect"
+                : ""
+            }
+            value={displayData.progress === 1 ? "" : textBoxInput}
+            onChange={HandleChange}
+            onCopy={(e) => e.preventDefault()}
+            onPaste={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            disabled={displayData.progress === 1}
+          />
+        </div>
+        <div id="raceButtonsContainer">
+          <button className="mediumButton" onClick={reset}>
+            Main menu
+          </button>
+          <button
+            id="raceAgainButton"
+            className="mediumButton"
+            style={{ display: displayData.progress == 1 ? "block" : "none" }}
+          >
+            Race again
+          </button>
+        </div>
+        {displayData.progress == 1 && (
+          <div id="infoCard" className="card">
+            <p>You just typed a quote from:</p>
+            <div id="infoContent">
+              <div>
+                <p>
+                  {writing.origin}
+                  <br />
+                  {writing.author}
+                  <br />
+                  {writing.uploader}
+                </p>
+                <button
+                  id="againButton"
+                  className="mediumButton"
+                  onClick={reset}
+                >
+                  Try again?
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
