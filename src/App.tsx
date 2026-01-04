@@ -2,6 +2,10 @@ import { useState, useCallback } from "react";
 import Racetrack from "./components/Racetrack";
 import Typer from "./components/Typer";
 
+import { IoIosSpeedometer } from "react-icons/io";
+import { MdTimer } from "react-icons/md";
+import { AiOutlineAim } from "react-icons/ai";
+
 export interface Writing {
   text: string;
   origin: string;
@@ -32,14 +36,13 @@ function App() {
     []
   );
 
-  function handleFinish(stats: {
-    wpm: number;
-    time: string;
-    accuracy: number;
-  }) {
-    setFinalValues(stats);
-    setGameActive(false);
-  }
+  const handleFinish = useCallback(
+    (stats: { wpm: number; time: string; accuracy: number }) => {
+      setFinalValues(stats);
+      setGameActive(false);
+    },
+    []
+  );
 
   function reset() {
     setRoundCount((prev) => prev + 1);
@@ -91,11 +94,17 @@ function App() {
               </div>
             </div>
             <div id="statCard">
-              <p>Speed:</p>
+              <span>
+                <IoIosSpeedometer /> Speed:
+              </span>
               <p className="bold">{finalValues.wpm} WPM</p>
-              <p>Time:</p>
+              <span>
+                <MdTimer /> Time:
+              </span>
               <p className="bold">{finalValues.time}</p>
-              <p>Accuracy</p>
+              <span>
+                <AiOutlineAim /> Accuracy
+              </span>
               <p className="bold">{finalValues.accuracy}%</p>
             </div>
           </div>

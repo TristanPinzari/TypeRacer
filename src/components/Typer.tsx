@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 
 interface FinalStats {
   wpm: number;
@@ -118,6 +118,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
   const startTimeRef = useRef(0);
   const totalCorrectCharsRef = useRef(0);
   const progressRef = useRef(0);
+  const keyStrokesRef = useRef(0);
 
   const textSplitted = useMemo(() => {
     return text.split(" ");
@@ -141,7 +142,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     }, 1000);
   }
 
-  function End() {
+  const End = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -153,13 +154,17 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     const formattedTime = `${mins}:${secs.toString().padStart(2, "0")}`;
-    handleFinish({ wpm: newWPM, time: formattedTime, accuracy: 0 });
+    handleFinish({
+      wpm: newWPM,
+      time: formattedTime,
+      accuracy: Math.round((text.length / keyStrokesRef.current) * 100),
+    });
 
     handlePulse({
       wpm: newWPM,
       progress: progressRef.current,
     });
-  }
+  }, [handleFinish, handlePulse, text]);
 
   useEffect(() => {
     totalCorrectCharsRef.current =
@@ -168,7 +173,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     if (displayData.progress == 1) {
       End();
     }
-  }, [displayData]);
+  }, [displayData, End]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -196,6 +201,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     ) {
       setTextBoxInput("");
       setWordIndex(wordIndex + 1);
+      keyStrokesRef.current += 1;
     } else {
       let correctLetters = 0;
       const currentWord = textSplitted[wordIndex];
@@ -212,6 +218,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
       ) {
         return;
       }
+      keyStrokesRef.current += 1;
       setTextBoxInput(value);
     }
   }

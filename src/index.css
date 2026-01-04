@@ -222,6 +222,7 @@ body,
   grid-template-columns: repeat(2, 1fr);
   grid-auto-flow: row;
   gap: 1rem;
+  align-items: center;
   width: 50%;
   min-width: 350px;
   box-sizing: border-box;
@@ -229,4 +230,16 @@ body,
 
 .bold {
   font-weight: bold;
+}
+
+#statCard span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#statCard span > :first-child {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: var(--secondary);
 }
