@@ -6,23 +6,16 @@ interface FinalStats {
   accuracy: number;
 }
 
-interface Writing {
-  text: string;
-  origin: string;
-  author: string;
-  uploader: string;
-}
-
 interface TyperProps {
   handleFinish: (stats: FinalStats) => void;
-  handlePulse: (liveWPM: number) => void;
-  writing: Writing;
+  handlePulse: (stats: { wpm: number; progress: number }) => void;
+  text: string;
 }
 
 function getDisplayData(
   input: string,
   index: number,
-  writing: Writing,
+  text: string,
   textSplitted: string[]
 ) {
   const currentWord = textSplitted[index] || "";
@@ -47,14 +40,14 @@ function getDisplayData(
     untypedUnderline,
     incorrectWords,
     untypedWords;
-  const correctWords = writing.text.slice(0, wordStartIndex);
+  const correctWords = text.slice(0, wordStartIndex);
   const currentUntypedLetter =
     input.length >= currentWord.length
-      ? writing.text[wordStartIndex + input.length] || ""
+      ? text[wordStartIndex + input.length] || ""
       : "";
 
   if (incorrectStartIndex == null) {
-    correctUnderline = writing.text.slice(
+    correctUnderline = text.slice(
       wordStartIndex,
       wordStartIndex + input.length
     );
@@ -62,27 +55,27 @@ function getDisplayData(
     currentUntypedUnderline =
       wordStartIndex + input.length > wordEndIndex - 1
         ? ""
-        : writing.text[wordStartIndex + input.length];
-    untypedUnderline = writing.text.slice(
+        : text[wordStartIndex + input.length];
+    untypedUnderline = text.slice(
       wordStartIndex + input.length + 1,
       wordEndIndex
     );
     incorrectWords = "";
-    untypedWords = writing.text.slice(wordEndIndex);
+    untypedWords = text.slice(wordEndIndex);
   } else {
-    correctUnderline = writing.text.slice(
+    correctUnderline = text.slice(
       wordStartIndex,
       wordStartIndex + incorrectStartIndex
     );
-    incorrectUnderline = writing.text.slice(
+    incorrectUnderline = text.slice(
       wordStartIndex + incorrectStartIndex,
       wordStartIndex + Math.min(currentWord.length, input.length)
     );
     currentUntypedUnderline =
       wordStartIndex + input.length > wordEndIndex - 1
         ? ""
-        : writing.text[wordStartIndex + input.length];
-    untypedUnderline = writing.text.slice(
+        : text[wordStartIndex + input.length];
+    untypedUnderline = text.slice(
       wordStartIndex +
         Math.min(currentWord.length, input.length) +
         (currentUntypedUnderline.length > 0 ? 1 : 0),
@@ -90,9 +83,9 @@ function getDisplayData(
     );
     incorrectWords =
       input.length > currentWord.length
-        ? writing.text.slice(wordEndIndex, wordStartIndex + input.length)
+        ? text.slice(wordEndIndex, wordStartIndex + input.length)
         : "";
-    untypedWords = writing.text.slice(
+    untypedWords = text.slice(
       wordStartIndex +
         Math.max(currentWord.length, input.length) +
         (currentUntypedLetter.length > 0 ? 1 : 0)
@@ -100,7 +93,7 @@ function getDisplayData(
   }
 
   const progress =
-    (correctWords.length + correctUnderline.length) / writing.text.length;
+    (correctWords.length + correctUnderline.length) / text.length;
 
   return {
     correctWords,
@@ -115,7 +108,7 @@ function getDisplayData(
   };
 }
 
-function Typer({ handleFinish, handlePulse, writing }: TyperProps) {
+function Typer({ handleFinish, handlePulse, text }: TyperProps) {
   const [textBoxInput, setTextBoxInput] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
 
@@ -124,23 +117,27 @@ function Typer({ handleFinish, handlePulse, writing }: TyperProps) {
   const timeRef = useRef(0);
   const startTimeRef = useRef(0);
   const totalCorrectCharsRef = useRef(0);
+  const progressRef = useRef(0);
 
   const textSplitted = useMemo(() => {
-    return writing.text.split(" ");
-  }, [writing.text]);
+    return text.split(" ");
+  }, [text]);
 
   const displayData = useMemo(() => {
-    return getDisplayData(textBoxInput, wordIndex, writing, textSplitted);
-  }, [textBoxInput, wordIndex, writing, textSplitted]);
+    return getDisplayData(textBoxInput, wordIndex, text, textSplitted);
+  }, [textBoxInput, wordIndex, text, textSplitted]);
 
   function startTimer() {
     if (timerRef.current) return;
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       timeRef.current += 1;
-      handlePulse(
-        Math.round(totalCorrectCharsRef.current / 5 / (timeRef.current / 60))
-      );
+      handlePulse({
+        wpm: Math.round(
+          totalCorrectCharsRef.current / 5 / (timeRef.current / 60)
+        ),
+        progress: progressRef.current,
+      });
     }, 1000);
   }
 
@@ -151,17 +148,23 @@ function Typer({ handleFinish, handlePulse, writing }: TyperProps) {
     }
     const seconds = (Date.now() - startTimeRef.current) / 1000;
     const minutes = seconds / 60;
-    const newWPM = totalCorrectCharsRef.current / 5 / minutes;
+    const newWPM = Math.round(totalCorrectCharsRef.current / 5 / minutes);
 
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     const formattedTime = `${mins}:${secs.toString().padStart(2, "0")}`;
     handleFinish({ wpm: newWPM, time: formattedTime, accuracy: 0 });
+
+    handlePulse({
+      wpm: newWPM,
+      progress: progressRef.current,
+    });
   }
 
   useEffect(() => {
     totalCorrectCharsRef.current =
       displayData.correctWords.length + displayData.correctUnderline.length;
+    progressRef.current = displayData.progress;
     if (displayData.progress == 1) {
       End();
     }
@@ -169,7 +172,11 @@ function Typer({ handleFinish, handlePulse, writing }: TyperProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+    handlePulse({
+      wpm: 0,
+      progress: progressRef.current,
+    });
+  }, [handlePulse]);
 
   function HandleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
