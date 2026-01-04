@@ -151,12 +151,13 @@ body,
 .blinker::before {
   content: "";
   position: absolute;
-  right: -2px;
+  left: -2px;
   height: 100%;
   width: 3px;
   background-color: white;
   border-radius: 25px;
   animation: blink 1s ease infinite;
+  animation-delay: 1s;
 }
 
 @keyframes blink {
