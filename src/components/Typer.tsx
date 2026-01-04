@@ -1,11 +1,22 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import Racetrack from "./components/Racetrack";
+import { useState, useMemo, useRef, useEffect } from "react";
+
+interface FinalStats {
+  wpm: number;
+  time: string;
+  accuracy: number;
+}
 
 interface Writing {
   text: string;
   origin: string;
   author: string;
   uploader: string;
+}
+
+interface TyperProps {
+  handleFinish: (stats: FinalStats) => void;
+  handlePulse: (liveWPM: number) => void;
+  writing: Writing;
 }
 
 function getDisplayData(
@@ -104,25 +115,15 @@ function getDisplayData(
   };
 }
 
-function App() {
-  console.log("rerender");
+function Typer({ handleFinish, handlePulse, writing }: TyperProps) {
   const [textBoxInput, setTextBoxInput] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
-  const [wpm, setWPM] = useState(0);
-  const [finalTime, setFinalTime] = useState("");
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeRef = useRef(0);
   const startTimeRef = useRef(0);
   const totalCorrectCharsRef = useRef(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const [writing, setWriting] = useState<Writing>({
-    text: "Betty decided to write a short story.",
-    origin: "Random text generator",
-    author: "i don't know",
-    uploader: "Me (Tristan)",
-  });
 
   const textSplitted = useMemo(() => {
     return writing.text.split(" ");
@@ -137,13 +138,13 @@ function App() {
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       timeRef.current += 1;
-      const minutes = (timeRef.current || 0) / 60;
-      const newWPM = totalCorrectCharsRef.current / 5 / minutes;
-      setWPM(Math.round(newWPM));
+      handlePulse(
+        Math.round(totalCorrectCharsRef.current / 5 / (timeRef.current / 60))
+      );
     }, 1000);
   }
 
-  function stopTimer() {
+  function End() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -151,38 +152,23 @@ function App() {
     const seconds = (Date.now() - startTimeRef.current) / 1000;
     const minutes = seconds / 60;
     const newWPM = totalCorrectCharsRef.current / 5 / minutes;
-    setWPM(Math.round(newWPM));
 
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     const formattedTime = `${mins}:${secs.toString().padStart(2, "0")}`;
-    setFinalTime(formattedTime);
-  }
-
-  function reset() {
-    setWordIndex(0);
-    setTextBoxInput("");
-    stopTimer();
-    setWPM(0);
-    timeRef.current = 0;
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
+    handleFinish({ wpm: newWPM, time: formattedTime, accuracy: 0 });
   }
 
   useEffect(() => {
     totalCorrectCharsRef.current =
       displayData.correctWords.length + displayData.correctUnderline.length;
     if (displayData.progress == 1) {
-      stopTimer();
+      End();
     }
   }, [displayData]);
 
   useEffect(() => {
     inputRef.current?.focus();
-    return () => {
-      stopTimer();
-    };
   }, []);
 
   function HandleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -224,106 +210,55 @@ function App() {
   }
 
   return (
-    <>
-      <div id="backgroundContainer" />
-      <div id="mainContainer" className="card">
-        <Racetrack wpm={wpm} progress={displayData.progress} />
-        <div
-          id="secondaryContainer"
-          style={{ display: displayData.progress == 1 ? "none" : "flex" }}
+    <div
+      id="secondaryContainer"
+      style={{ display: displayData.progress == 1 ? "none" : "flex" }}
+    >
+      <p id="textDisplay">
+        <span className="correct">{displayData.correctWords}</span>
+        <span className="correct underline">
+          {displayData.correctUnderline}
+        </span>
+        <span className="incorrect underline">
+          {displayData.incorrectUnderline}
+        </span>
+        <span
+          className={`${
+            displayData.currentUntypedUnderline != " " ? "underline" : ""
+          } ${displayData.currentUntypedUnderline.length > 0 ? "blinker" : ""}`}
         >
-          <p id="textDisplay">
-            <span className="correct">{displayData.correctWords}</span>
-            <span className="correct underline">
-              {displayData.correctUnderline}
-            </span>
-            <span className="incorrect underline">
-              {displayData.incorrectUnderline}
-            </span>
-            <span
-              className={`${
-                displayData.currentUntypedUnderline != " " ? "underline" : ""
-              } ${
-                displayData.currentUntypedUnderline.length > 0 ? "blinker" : ""
-              }`}
-            >
-              {displayData.currentUntypedUnderline}
-            </span>
-            <span className="underline">{displayData.untypedUnderline}</span>
-            <span className="incorrect">{displayData.incorrectWords}</span>
-            <span
-              className={
-                displayData.currentUntypedLetter.length > 0 ? "blinker" : ""
-              }
-            >
-              {displayData.currentUntypedLetter}
-            </span>
-            <span>{displayData.untypedWords}</span>
-          </p>
-          <input
-            id="textBox"
-            className={
-              displayData.incorrectWords.length +
-                displayData.incorrectUnderline.length >
-              0
-                ? "incorrect"
-                : ""
-            }
-            ref={inputRef}
-            value={displayData.progress === 1 ? "" : textBoxInput}
-            onChange={HandleChange}
-            onCopy={(e) => e.preventDefault()}
-            onPaste={(e) => e.preventDefault()}
-            onCut={(e) => e.preventDefault()}
-            disabled={displayData.progress == 1}
-          />
-        </div>
-        <div id="raceButtonsContainer">
-          <button className="mediumButton" onClick={reset}>
-            Main menu
-          </button>
-          <button
-            id="raceAgainButton"
-            className="mediumButton"
-            style={{ display: displayData.progress == 1 ? "block" : "none" }}
-          >
-            Race again
-          </button>
-        </div>
-        {displayData.progress == 1 && (
-          <div id="infoCard" className="card">
-            <p>You just typed a quote from:</p>
-            <div id="infoContent">
-              <div>
-                <p>
-                  <span id="origin">{writing.origin}</span>
-                  <br />
-                  <span id="author">Written by: {writing.author}</span>
-                  <br />
-                  <span id="uploader">Uploaded by: {writing.uploader}</span>
-                </p>
-                <button
-                  id="againButton"
-                  className="mediumButton"
-                  onClick={reset}
-                >
-                  Try again?
-                </button>
-              </div>
-            </div>
-            <div id="statCard">
-              <p>Speed:</p>
-              <p className="bold">{wpm} WPM</p>
-              <p>Time:</p>
-              <p className="bold">{finalTime}</p>
-              <p>Accuracy</p>
-              <p className="bold">{wpm} WPM</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+          {displayData.currentUntypedUnderline}
+        </span>
+        <span className="underline">{displayData.untypedUnderline}</span>
+        <span className="incorrect">{displayData.incorrectWords}</span>
+        <span
+          className={
+            displayData.currentUntypedLetter.length > 0 ? "blinker" : ""
+          }
+        >
+          {displayData.currentUntypedLetter}
+        </span>
+        <span>{displayData.untypedWords}</span>
+      </p>
+      <input
+        id="textBox"
+        className={
+          displayData.incorrectWords.length +
+            displayData.incorrectUnderline.length >
+          0
+            ? "incorrect"
+            : ""
+        }
+        ref={inputRef}
+        value={displayData.progress === 1 ? "" : textBoxInput}
+        onChange={HandleChange}
+        onCopy={(e) => e.preventDefault()}
+        onPaste={(e) => e.preventDefault()}
+        onCut={(e) => e.preventDefault()}
+        disabled={displayData.progress == 1}
+      />
+    </div>
   );
 }
 
-export default App;
+export default Typer;

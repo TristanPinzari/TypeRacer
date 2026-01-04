@@ -194,11 +194,39 @@ body,
   font-weight: bold;
 }
 
-#infoContent {
+#infoContent,
+#statCard {
   padding: 2rem;
+}
+
+#infoContent {
+  border-bottom: 1px solid var(--border-muted);
 }
 
 #infoContent > :first-child {
   display: flex;
   justify-content: space-between;
+}
+
+#origin {
+  font-size: var(--big);
+}
+
+#author,
+#uploader {
+  color: var(--text-muted);
+}
+
+#statCard {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-flow: row;
+  gap: 1rem;
+  width: 50%;
+  min-width: 350px;
+  box-sizing: border-box;
+}
+
+.bold {
+  font-weight: bold;
 }
