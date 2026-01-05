@@ -226,6 +226,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
   return (
     <div
       id="secondaryContainer"
+      className="card"
       style={{ display: displayData.progress == 1 ? "none" : "flex" }}
     >
       <p id="textDisplay">
@@ -239,20 +240,28 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
         <span
           className={`${
             displayData.currentUntypedUnderline != " " ? "underline" : ""
-          } ${displayData.currentUntypedUnderline.length > 0 ? "blinker" : ""}`}
+          } ${
+            displayData.currentUntypedUnderline.length > 0
+              ? "blinker untyped"
+              : "untyped"
+          }`}
         >
           {displayData.currentUntypedUnderline}
         </span>
-        <span className="underline">{displayData.untypedUnderline}</span>
+        <span className="underline untyped">
+          {displayData.untypedUnderline}
+        </span>
         <span className="incorrect">{displayData.incorrectWords}</span>
         <span
           className={
-            displayData.currentUntypedLetter.length > 0 ? "blinker" : ""
+            displayData.currentUntypedLetter.length > 0
+              ? "blinker untyped"
+              : "untyped"
           }
         >
           {displayData.currentUntypedLetter}
         </span>
-        <span>{displayData.untypedWords}</span>
+        <span className="untyped">{displayData.untypedWords}</span>
       </p>
       <input
         id="textBox"

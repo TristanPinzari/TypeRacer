@@ -9,14 +9,33 @@
   --border-muted: oklch(0.3 0 340);
   --primary: oklch(75.536% 0.15349 231.667 / 0.9);
   --secondary: oklch(0.76 0.2 56/ 0.9);
-  --danger: oklch(69.573% 0.19521 30.302 / 0.5);
+  --danger: oklch(69.573% 0.19521 30.302);
   --warning: oklch(0.7 0.2 100);
-  --success: oklch(71.529% 0.17562 155.376 / 0.5);
+  --success: #4caf50;
   --info: oklch(0.7 0.2 260);
   --default-border-radius: 15px;
   --small: 0.75rem;
   --default: 1rem;
   --big: 1.25rem;
+  --large: 1.5rem;
+  --shadow-s: inset 0 1px 2px #ffffff30, /* top highlight */ 0 1px 2px #00000030,
+    /* dark shadow */ 0 2px 4px #00000015; /* soft shadow */
+  --shadow-m: inset 0 1px 2px #ffffff50, /* top highlight */ 0 2px 4px #00000030,
+    /* dark shadow */ 0 4px 8px #00000015; /* soft shadow */
+  --shadow-l: inset 0 1px 2px #ffffff70, /* top highlight */ 0 4px 6px #00000030,
+    /* dark shadow */ 0 6px 10px #00000015; /* soft shadow */
+}
+
+.light {
+  --bg-dark: oklch(0.9 0 340);
+  --bg: oklch(0.98 0 340);
+  --bg-light: oklch(1 0 340);
+  --primary: #005894;
+  --text: var(--primary);
+  --text-muted: oklch(88.224% 0.0001 271.152 / 0.9);
+  --highlight: oklch(0.6 0 340);
+  --border: oklch(0.85 0 340);
+  --border-muted: oklch(0.92 0 340 / 0.5);
 }
 
 * {
@@ -32,6 +51,7 @@ button {
   cursor: pointer;
   border-radius: 10px;
   background-color: var(--primary);
+  color: white;
 }
 
 body,
@@ -48,19 +68,42 @@ body,
   height: 70vh;
   background-image: url(assets/banner.svg);
   background-repeat: no-repeat;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 90%);
+  background-size: contain;
+}
+
+.light #backgroundContainer {
+  background-image: url(assets/lightbanner.svg);
 }
 
 .card {
   background-color: var(--bg);
   border-radius: var(--default-border-radius);
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 2rem;
+  border: 1px solid var(--border-muted);
+  box-shadow: var(--shadow-m);
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.mediumButton {
+  width: 10rem;
+  height: 3rem;
+}
+
+.bigButton {
+  width: 15rem;
+  height: 4.5rem;
+  font-size: var(--big);
 }
 
 #mainContainer {
-  width: clamp(350px, 90vw, 800px);
   position: absolute;
-  top: 20vh;
+  top: 15vh;
   left: 50vw;
   height: auto;
   translate: -50%;
@@ -69,6 +112,58 @@ body,
   justify-content: center;
   gap: 2rem;
   padding: 2rem;
+  box-sizing: border-box;
+}
+
+.componentContainer {
+  width: clamp(350px, 90vw, 800px);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  justify-content: center;
+}
+
+/* Menu styling */
+
+#enterRaceContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background-image: url("assets/superRaceCar.svg");
+  background-repeat: no-repeat;
+  background-position: right -30% bottom 5%;
+  background-size: 60%;
+}
+
+#enterRaceContainer > :first-child {
+  font-size: var(--large);
+  font-weight: bold;
+}
+
+#enterRaceContainer > :nth-child(3) {
+  background-color: var(--success);
+}
+
+#themeToggle {
+  width: fit-content;
+  padding: 0.75rem;
+  background: none;
+  border: 1px solid var(--border);
+  background-color: oklch(0.25 0 340);
+}
+
+/* Practice styling */
+
+#raceContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  justify-content: center;
+}
+
+#raceOn {
+  font-size: var(--big);
+  font-weight: bold;
 }
 
 .Racetrack {
@@ -81,6 +176,10 @@ body,
   width: 90%;
   border-bottom: dashed 2px var(--primary);
   position: relative;
+}
+
+.light .Racetrack > :first-child {
+  border-bottom: dashed 2px black;
 }
 
 .Racetrack > :first-child .avatar {
@@ -106,10 +205,6 @@ body,
 #secondaryContainer {
   width: 100%;
   background-color: var(--bg-light);
-  border-radius: var(--default-border-radius);
-  box-sizing: border-box;
-  padding: 2rem;
-  display: flex;
   flex-direction: column;
   gap: 2rem;
 }
@@ -125,6 +220,10 @@ body,
   background-color: transparent;
   padding: 0.5rem;
   font-family: monospace;
+}
+
+.light #textBox {
+  color: black;
 }
 
 #textBox.incorrect {
@@ -148,16 +247,24 @@ body,
   text-decoration: underline;
 }
 
+.light .untyped {
+  color: black;
+}
+
 .blinker::before {
   content: "";
   position: absolute;
-  left: -2px;
+  left: -1px;
   height: 100%;
-  width: 3px;
+  width: 2px;
   background-color: white;
   border-radius: 25px;
   animation: blink 1s ease infinite;
   animation-delay: 1s;
+}
+
+.light .blinker::before {
+  background-color: black;
 }
 
 @keyframes blink {
@@ -175,17 +282,26 @@ body,
   justify-content: space-between;
 }
 
-.mediumButton {
-  width: 10rem;
-  height: 3rem;
-}
-
 #raceAgainButton {
   background-color: var(--secondary);
 }
 
 #infoCard {
   border: 1px solid var(--bg-light);
+  padding: 0;
+}
+
+.light #infoCard,
+.light #infoCard > :first-child {
+  background-color: var(--primary);
+}
+
+.light #infoCard > :first-child {
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.light #infoCard * {
+  color: white;
 }
 
 #infoCard > :first-child {
@@ -217,6 +333,15 @@ body,
   color: var(--text-muted);
 }
 
+.light #author,
+.light #uploader {
+  color: var(--text-muted);
+}
+
+.light #againButton {
+  background-color: var(--secondary);
+}
+
 #statCard {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -228,18 +353,25 @@ body,
   box-sizing: border-box;
 }
 
-.bold {
-  font-weight: bold;
-}
-
 #statCard span {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+#statCard p {
+  font-weight: bold;
+}
+
 #statCard span > :first-child {
   width: 1.5rem;
   height: 1.5rem;
-  fill: var(--secondary);
+  fill: var(--primary);
+  background-color: rgb(51, 51, 51);
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+.light #statCard span > :first-child {
+  background-color: white;
 }
