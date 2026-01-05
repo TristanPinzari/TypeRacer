@@ -20,8 +20,8 @@ function Menu({ navigate }: { navigate: (location: string) => void }) {
 
   return (
     <div id="menuContainer" className="componentContainer">
-      <div id="enterRaceContainer" className="card">
-        <p>TypeRacer - The Global Typing Competition</p>
+      <div id="enterRaceContainer" className="card flexColumnGap">
+        <p className="header">TypeRacer - The Global Typing Competition</p>
         <p>Increase your typing speed while racing against others!</p>
         <button className="bigButton" onClick={() => navigate("practice")}>
           Enter a Typing Race
@@ -29,6 +29,20 @@ function Menu({ navigate }: { navigate: (location: string) => void }) {
         <button id="themeToggle" onClick={handleThemeToggle}>
           Dark mode: {darkMode ? "ON" : "OFF"}
         </button>
+      </div>
+      <div id="menuOtherCards">
+        <div className="card flexColumnGap">
+          <p className="header">Typing Test</p>
+          <p>Improve your typing skills on your own</p>
+          <button className="bigButton" onClick={() => navigate("practice")}>
+            Practice yourself
+          </button>
+        </div>
+        <div className="card flexColumnGap">
+          <p className="header">Race your friends</p>
+          <p>Create your own racetrack and play with friends</p>
+          <button className="bigButton">Create racetrack</button>
+        </div>
       </div>
     </div>
   );

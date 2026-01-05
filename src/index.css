@@ -7,8 +7,8 @@
   --highlight: oklch(0.5 0 340);
   --border: oklch(0.4 0 340);
   --border-muted: oklch(0.3 0 340);
-  --primary: oklch(75.536% 0.15349 231.667 / 0.9);
-  --secondary: oklch(0.76 0.2 56/ 0.9);
+  --primary: oklch(75.536% 0.15349 231.667);
+  --secondary: oklch(0.76 0.2 56);
   --danger: oklch(69.573% 0.19521 30.302);
   --warning: oklch(0.7 0.2 100);
   --success: #4caf50;
@@ -35,7 +35,7 @@
   --text-muted: oklch(88.224% 0.0001 271.152 / 0.9);
   --highlight: oklch(0.6 0 340);
   --border: oklch(0.85 0 340);
-  --border-muted: oklch(0.92 0 340 / 0.5);
+  --border-muted: oklch(82.656% 0.00009 271.152);
 }
 
 * {
@@ -60,9 +60,13 @@ body,
   min-height: 100vh;
   background-color: var(--bg-dark);
   overflow-x: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 #backgroundContainer {
+  top: 0;
+  left: 0;
   position: absolute;
   width: 100vw;
   height: 70vh;
@@ -83,7 +87,6 @@ body,
   box-sizing: border-box;
   padding: 2rem;
   border: 1px solid var(--border-muted);
-  box-shadow: var(--shadow-m);
 }
 
 .bold {
@@ -101,18 +104,24 @@ body,
   font-size: var(--big);
 }
 
-#mainContainer {
-  position: absolute;
-  top: 15vh;
-  left: 50vw;
-  height: auto;
-  translate: -50%;
+.header {
+  font-size: var(--large);
+  font-weight: bold;
+}
+
+.flexColumnGap {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 2rem;
+}
+
+#mainContainer {
+  justify-content: center;
   padding: 2rem;
   box-sizing: border-box;
+  z-index: 1;
+  height: fit-content;
+  margin: 7.5vh 0;
 }
 
 .componentContainer {
@@ -123,21 +132,17 @@ body,
   justify-content: center;
 }
 
+.componentContainer > * {
+  box-shadow: var(--shadow-m);
+}
+
 /* Menu styling */
 
 #enterRaceContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
   background-image: url("assets/superRaceCar.svg");
   background-repeat: no-repeat;
   background-position: right -30% bottom 5%;
   background-size: 60%;
-}
-
-#enterRaceContainer > :first-child {
-  font-size: var(--large);
-  font-weight: bold;
 }
 
 #enterRaceContainer > :nth-child(3) {
@@ -152,12 +157,45 @@ body,
   background-color: oklch(0.25 0 340);
 }
 
+#menuOtherCards {
+  box-shadow: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+#menuContainer {
+  width: clamp(350px, 90vw, 900px);
+}
+
+#menuOtherCards > * {
+  flex: 1 1;
+  min-width: 350px;
+  background-repeat: no-repeat;
+  background-position: right -20% bottom 5%;
+  background-size: 40%;
+  box-shadow: var(--shadow-m);
+}
+
+#menuOtherCards > :nth-child(1) {
+  background-image: url("assets/redCarFlipped.svg");
+}
+
+#menuOtherCards > :nth-child(1) > button {
+  margin-top: auto;
+}
+
+#menuOtherCards > :nth-child(2) {
+  background-image: url("assets/racetrackFriends.svg");
+}
+
+#menuOtherCards > :nth-child(2) > button {
+  background-color: var(--secondary);
+}
+
 /* Practice styling */
 
 #raceContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
   justify-content: center;
 }
 
@@ -205,8 +243,6 @@ body,
 #secondaryContainer {
   width: 100%;
   background-color: var(--bg-light);
-  flex-direction: column;
-  gap: 2rem;
 }
 
 #textDisplay > * {
@@ -280,6 +316,7 @@ body,
 #raceButtonsContainer {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 #raceAgainButton {

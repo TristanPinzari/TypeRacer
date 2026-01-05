@@ -226,7 +226,7 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
   return (
     <div
       id="secondaryContainer"
-      className="card"
+      className="card flexColumnGap"
       style={{ display: displayData.progress == 1 ? "none" : "flex" }}
     >
       <p id="textDisplay">

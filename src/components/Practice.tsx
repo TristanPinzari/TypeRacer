@@ -51,7 +51,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
 
   return (
     <div id="practiceContainer" className="componentContainer">
-      <div id="raceContainer" className="card component">
+      <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
         <Racetrack wpm={liveValues.wpm} progress={liveValues.progress} />
         <Typer
@@ -72,40 +72,44 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
             Race again
           </button>
         </div>
-      </div>
-      {!gameActive && (
-        <div id="infoCard" className="card">
-          <p>You just typed a quote from:</p>
-          <div id="infoContent">
-            <div>
-              <p>
-                <span id="origin">{writing.origin}</span>
-                <br />
-                <span id="author">Written by: {writing.author}</span>
-                <br />
-                <span id="uploader">Uploaded by: {writing.uploader}</span>
-              </p>
-              <button id="againButton" className="mediumButton" onClick={reset}>
-                Try again?
-              </button>
+        {!gameActive && (
+          <div id="infoCard" className="card">
+            <p>You just typed a quote from:</p>
+            <div id="infoContent">
+              <div>
+                <p>
+                  <span id="origin">{writing.origin}</span>
+                  <br />
+                  <span id="author">Written by: {writing.author}</span>
+                  <br />
+                  <span id="uploader">Uploaded by: {writing.uploader}</span>
+                </p>
+                <button
+                  id="againButton"
+                  className="mediumButton"
+                  onClick={reset}
+                >
+                  Try again?
+                </button>
+              </div>
+            </div>
+            <div id="statCard">
+              <span>
+                <IoIosSpeedometer /> Speed:
+              </span>
+              <p>{finalValues.wpm} WPM</p>
+              <span>
+                <MdTimer /> Time:
+              </span>
+              <p>{finalValues.time}</p>
+              <span>
+                <AiOutlineAim /> Accuracy
+              </span>
+              <p>{finalValues.accuracy}%</p>
             </div>
           </div>
-          <div id="statCard">
-            <span>
-              <IoIosSpeedometer /> Speed:
-            </span>
-            <p>{finalValues.wpm} WPM</p>
-            <span>
-              <MdTimer /> Time:
-            </span>
-            <p>{finalValues.time}</p>
-            <span>
-              <AiOutlineAim /> Accuracy
-            </span>
-            <p>{finalValues.accuracy}%</p>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
