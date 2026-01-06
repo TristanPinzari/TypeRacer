@@ -23,7 +23,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
   const [writing, setWriting] = useState<Writing>({
-    text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.",
+    text: "Lorem ipsum is meaningless placeholder text used in design (web, print) to show how a layout looks with text, focusing attention on visuals, not content; it's a corrupted Latin passage from Cicero, starting with dolorem ipsum (pain itself), but altered to be nonsensical filler that mimics real text flow, as noted by",
     origin: "Random text generator",
     author: "i don't know",
     uploader: "Me (Tristan)",
