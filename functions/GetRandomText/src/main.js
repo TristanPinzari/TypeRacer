@@ -1,10 +1,11 @@
 export default async ({ req, res, log, error }) => {
-  // This message will show up in your Appwrite Console logs
-  log("Function was triggered successfully!");
-
-  // This is what gets sent back to your React app
-  return res.json({
+  const data = {
     message: "Hello from the Backend!",
     status: "online",
-  });
+  };
+
+  // This line "forces" the data to show up in the Logs tab
+  log(JSON.stringify(data));
+
+  return res.json(data);
 };
