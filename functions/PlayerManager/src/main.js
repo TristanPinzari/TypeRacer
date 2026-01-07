@@ -12,6 +12,11 @@ export default async ({ req, res, log, error }) => {
   }
 
   const { action, data } = req.bodyJson;
+
+  if (!action) {
+    return res.json({ error: "Missing action" }, 400);
+  }
+  log(action);
   switch (action) {
     case "addPlayerToRows":
       try {
