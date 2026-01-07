@@ -8,6 +8,7 @@ import { useState, useCallback, useEffect } from "react";
 import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
+import LoadingScreen from "./LoadingScreen";
 
 export interface gameText {
   content: string;
@@ -17,6 +18,7 @@ export interface gameText {
 }
 
 function Practice({ navigate }: { navigate: (location: string) => void }) {
+  const [pageState, setPageState] = useState("loading");
   const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
   const [finalValues, setFinalValues] = useState({
     wpm: 0,
@@ -48,26 +50,42 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     []
   );
 
-  function reset() {
+  function resetGame() {
     setRoundCount((prev) => prev + 1);
     setGameActive(true);
   }
 
+  const fetchData = async () => {
+    try {
+      const result = await functions.createExecution(
+        import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
+      );
+      if (result.status === "completed") {
+        const data = JSON.parse(result.responseBody);
+        setGameText(data);
+        setPageState("ready");
+      }
+    } catch (error) {
+      console.error("Execution failed:", error);
+      setPageState("failed");
+    }
+  };
+
+  function createNewRace() {
+    fetchData().then(() => {
+      resetGame();
+    });
+  }
+
   useEffect(() => {
     (async () => {
-      try {
-        const result = await functions.createExecution(
-          import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
-        );
-        if (result.status === "completed") {
-          const data = JSON.parse(result.responseBody);
-          setGameText(data);
-        }
-      } catch (error) {
-        console.error("Execution failed:", error);
-      }
+      await fetchData();
     })();
   }, []);
+
+  if (pageState == "loading" || pageState == "failed") {
+    return <LoadingScreen state={pageState} navigate={navigate} />;
+  }
 
   return (
     <div id="practiceContainer" className="componentContainer">
@@ -88,8 +106,9 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
             id="raceAgainButton"
             className="mediumButton"
             style={{ display: !gameActive ? "block" : "none" }}
+            onClick={createNewRace}
           >
-            Race again
+            New race
           </button>
         </div>
         {!gameActive && (
@@ -107,7 +126,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
                 <button
                   id="againButton"
                   className="mediumButton"
-                  onClick={reset}
+                  onClick={resetGame}
                 >
                   Try again?
                 </button>
