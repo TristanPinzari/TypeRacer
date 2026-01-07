@@ -23,7 +23,7 @@ function Menu({ navigate }: { navigate: (location: string) => void }) {
       <div id="enterRaceContainer" className="card flexColumnGap">
         <p className="header">TypeRacer - The Global Typing Competition</p>
         <p>Increase your typing speed while racing against others!</p>
-        <button className="bigButton" onClick={() => navigate("practice")}>
+        <button className="bigButton" onClick={() => navigate("publicRace")}>
           Enter a Typing Race
         </button>
         <button id="themeToggle" onClick={handleThemeToggle}>

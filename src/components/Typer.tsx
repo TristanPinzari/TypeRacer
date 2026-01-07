@@ -176,7 +176,6 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
   }, [displayData, End]);
 
   useEffect(() => {
-    inputRef.current?.focus();
     handlePulse({
       wpm: 0,
       progress: progressRef.current,
@@ -278,6 +277,8 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
         onCopy={(e) => e.preventDefault()}
         onPaste={(e) => e.preventDefault()}
         onCut={(e) => e.preventDefault()}
+        autoComplete="off"
+        autoFocus
         disabled={displayData.progress == 1}
       />
     </div>

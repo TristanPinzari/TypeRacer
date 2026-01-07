@@ -9,13 +9,7 @@ import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
-
-export interface gameText {
-  content: string;
-  origin: string;
-  author: string;
-  uploader: string;
-}
+import type { gameText } from "../assets/interfaces";
 
 function Practice({ navigate }: { navigate: (location: string) => void }) {
   const [pageState, setPageState] = useState("loading");
@@ -33,6 +27,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     origin: "",
     author: "",
     uploader: "",
+    type: "",
   });
 
   const handlePulse = useCallback(
@@ -84,7 +79,13 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
   }, []);
 
   if (pageState == "loading" || pageState == "failed") {
-    return <LoadingScreen state={pageState} navigate={navigate} />;
+    return (
+      <LoadingScreen
+        state={pageState}
+        loadMessage="Retrieving a random text just for you."
+        navigate={navigate}
+      />
+    );
   }
 
   return (
@@ -119,7 +120,9 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
                 <p>
                   <span id="origin">{gameText.origin}</span>
                   <br />
-                  <span id="author">Written by: {gameText.author}</span>
+                  <span id="author">
+                    {gameText.type} by: {gameText.author}
+                  </span>
                   <br />
                   <span id="uploader">Uploaded by: {gameText.uploader}</span>
                 </p>

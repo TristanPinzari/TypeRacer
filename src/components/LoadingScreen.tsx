@@ -3,20 +3,20 @@ import { BiSolidErrorAlt } from "react-icons/bi";
 
 function LoadingScreen({
   state,
+  loadMessage = "Loading this page just for you.",
+  faileMessage = "Something went wrong.",
   navigate,
 }: {
   state: string;
-  navigate: (location: string) => void;
+  loadMessage?: string;
+  faileMessage?: string;
+  navigate?: (location: string) => void;
 }) {
   return (
     <div className={`LoadingScreen ${state}`}>
       {state == "loading" ? <LuLoader /> : <BiSolidErrorAlt />}
-      <p>
-        {state == "loading"
-          ? "Loading this page just for you."
-          : "Something went wrong."}
-      </p>
-      {state == "failed" && (
+      <p>{state == "loading" ? loadMessage : faileMessage}</p>
+      {state == "failed" && navigate && (
         <button onClick={() => navigate("menu")} className="mediumButton">
           Main menu
         </button>

@@ -1,6 +1,7 @@
 import Practice from "./components/Practice";
 import Menu from "./components/Menu";
 import { Activity, useState } from "react";
+import PublicRace from "./components/PublicRace";
 
 function App() {
   const [activeComponent, setActiveComponent] = useState("menu");
@@ -13,6 +14,9 @@ function App() {
         </Activity>
         {activeComponent == "practice" && (
           <Practice navigate={setActiveComponent} />
+        )}
+        {activeComponent == "publicRace" && (
+          <PublicRace navigate={setActiveComponent} />
         )}
       </div>
     </>
