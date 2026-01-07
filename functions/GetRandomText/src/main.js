@@ -16,7 +16,7 @@ export default async ({ req, res, log, error }) => {
       queries: [Query.limit(1)],
     });
 
-    log(initialView);
+    log("\ninitialView:", initialView);
 
     const total = initialView.total;
 
@@ -32,18 +32,9 @@ export default async ({ req, res, log, error }) => {
       queries: [Query.limit(1), Query.offset(randomOffset)],
     });
 
-    log(result);
+    log("\nresults:", result);
 
     const pickedDoc = result.documents[0];
-
-    log(pickedDoc);
-
-    log(
-      res.json({
-        text: pickedDoc.content,
-        author: pickedDoc.author || "Unknown",
-      })
-    );
 
     return res.json({
       text: pickedDoc.content,
