@@ -13,7 +13,7 @@ export default async ({ req, res, log, error }) => {
     const initialView = await tablesDB.listRows({
       databaseId: process.env.APPWRITE_DATABASE_ID,
       tableId: "texts",
-      queries: [Query.limit(0)],
+      queries: [Query.limit(1)],
     });
 
     log(initialView);
