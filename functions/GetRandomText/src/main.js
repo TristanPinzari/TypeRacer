@@ -9,14 +9,11 @@ export default async ({ req, res, log, error }) => {
   const tablesDB = new TablesDB(client);
 
   try {
-    // 1. Get the total count (Limit 0 means we download NO documents yet)
     const initialView = await tablesDB.listRows({
       databaseId: process.env.APPWRITE_DATABASE_ID,
       tableId: "texts",
       queries: [Query.limit(1)],
     });
-
-    log("\ninitialView:", initialView);
 
     const total = initialView.total;
 
@@ -32,15 +29,14 @@ export default async ({ req, res, log, error }) => {
       queries: [Query.limit(1), Query.offset(randomOffset)],
     });
 
-    log("\nresults:", result);
-
     const pickedDoc = result.rows[0];
 
-    log("\npickedDoc:", pickedDoc);
-
     return res.json({
-      text: pickedDoc.content,
-      author: pickedDoc.author || "Unknown",
+      content: pickedDoc.content,
+      origin: pickedDoc.origin,
+      author: pickedDoc.author,
+      type: pickedDoc.type,
+      uploader: pickedDoc.uploader,
     });
   } catch (err) {
     error("Error: " + err.message);
