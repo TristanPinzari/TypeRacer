@@ -16,7 +16,7 @@ export default async ({ req, res, log, error }) => {
   if (!action) {
     return res.json({ error: "Missing action" }, 400);
   }
-  log(action);
+  log("Action:", action);
   switch (action) {
     case "addPlayerToRows":
       try {
