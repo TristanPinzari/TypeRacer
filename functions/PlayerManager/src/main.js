@@ -7,18 +7,16 @@ export default async ({ req, res, log, error }) => {
     .setKey(process.env.APPWRITE_API_KEY);
   const tablesDB = new TablesDB(client);
 
+  function hasValidArgs(args) {
+    return args.every((arg) => arg !== undefined && arg !== null);
+  }
+
   const { action, data } = req.bodyJson;
   switch (action) {
     case "addPlayerToRows":
       try {
-        const client = new Client()
-          .setEndpoint("https://tor.cloud.appwrite.io/v1")
-          .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-          .setKey(process.env.APPWRITE_API_KEY);
-
-        const tablesDB = new TablesDB(client);
         const playerId = ID.unique();
-        const promise = await tablesDB.createRow({
+        await tablesDB.createRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "players",
           rowId: playerId,
@@ -27,19 +25,67 @@ export default async ({ req, res, log, error }) => {
           },
         });
 
-        return res.json({ status: "complete", playerId: playerId }, 200);
+        return res.json({ playerId: playerId }, 200);
       } catch (err) {
         error("Error: " + err.message);
         return res.json({ error: "Failed to fetch" }, 500);
       }
 
-    case "updateStatus":
-      // You can add more cases like this later!
-      log("Updating status logic goes here");
-      return res.json({ status: "updated" }, 200);
+    case "removePlayerFromRows":
+      if (!hasValidArgs([data?.playerId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+
+      try {
+        await tablesDB.deleteRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+        });
+
+        return res.json({}, 200);
+      } catch (err) {
+        error("Error: " + err.message);
+        return res.json({ error: "Failed to fetch" }, 500);
+      }
+
+    case "updatePlayerStatus":
+      if (!hasValidArgs([data?.playerId, data?.newStatus])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+
+      try {
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+          data: { status: data.newStatus },
+        });
+        return res.json({}, 200);
+      } catch (err) {
+        error("Error: " + err.message);
+        return res.json({ error: "Failed to fetch" }, 500);
+      }
+
+    case "updatePlayerLastSeen":
+      if (!hasValidArgs([data?.playerId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+
+      try {
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+          data: { lastSeen: Date.now() },
+        });
+        return res.json({}, 200);
+      } catch (err) {
+        error("Error: " + err.message);
+        return res.json({ error: "Failed to fetch" }, 500);
+      }
 
     default:
-      // Handle cases where the action doesn't match anything
       return res.json({ error: `Action '${action}' not recognized` }, 400);
   }
 };

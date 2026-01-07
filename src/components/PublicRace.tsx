@@ -1,8 +1,6 @@
 import Racetrack from "./Racetrack";
 import Typer from "./Typer";
 
-import { functions } from "../lib/appwrite";
-
 import { useState, useCallback, useEffect } from "react";
 
 import { IoIosSpeedometer } from "react-icons/io";
@@ -10,8 +8,40 @@ import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
 import type { gameText } from "../assets/interfaces";
+import { functions } from "../lib/appwrite";
 
-function Practice({ navigate }: { navigate: (location: string) => void }) {
+function addPlayerToRows() {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "addPlayerToRows",
+    }),
+  });
+}
+
+function removePlayerFromRows(playerId: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "removePlayerFromRows",
+      data: { playerId: playerId },
+    }),
+    async: true,
+  });
+}
+
+function updatePlayerStatus(playerId: string, newStatus: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "updatePlayerStatus",
+      data: { playerId: playerId, newStatus: newStatus },
+    }),
+  });
+}
+
+function PublicRace({ navigate }: { navigate: (location: string) => void }) {
+  const [playerId, setPlayerId] = useState(null);
   const [pageState, setPageState] = useState("loading");
   const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
   const [finalValues, setFinalValues] = useState({
@@ -19,11 +49,10 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     time: "",
     accuracy: 0,
   });
-
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
   const [gameText, setGameText] = useState<gameText>({
-    content: "",
+    content: "ye.",
     origin: "",
     author: "",
     uploader: "",
@@ -50,39 +79,75 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     setGameActive(true);
   }
 
-  const fetchData = async () => {
-    try {
-      const result = await functions.createExecution(
-        import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
-      );
-      if (result.status === "completed") {
-        const data = JSON.parse(result.responseBody);
-        setGameText(data);
-        setPageState("ready");
+  const joinRace = useCallback(async () => {
+    if (playerId) {
+      try {
+        const response = await updatePlayerStatus(playerId, "searching");
+        if (response.status === "completed") {
+          const body = JSON.parse(response.responseBody);
+          if (body.error) {
+            console.error("Function error:", body.error);
+            setPageState("failed");
+          }
+        } else {
+          setPageState("failed");
+        }
+      } catch (error) {
+        console.error("Function execution failed:", error);
       }
-    } catch (error) {
-      console.error("Execution failed:", error);
+    } else {
+      console.error("Tried to join race without playerId");
       setPageState("failed");
     }
-  };
+  }, [playerId]);
 
-  function createNewRace() {
-    fetchData().then(() => {
-      resetGame();
-    });
-  }
-
+  // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
   useEffect(() => {
     (async () => {
-      await fetchData();
+      try {
+        const response = await addPlayerToRows();
+        if (response.status === "completed") {
+          const reponseBody = JSON.parse(response.responseBody);
+          if (reponseBody.playerId) {
+            setPlayerId(reponseBody.playerId);
+          } else {
+            console.error("Function error:", reponseBody.error);
+            setPageState("failed");
+          }
+        }
+      } catch (error) {
+        console.error("Function execution failed:", error);
+        setPageState("failed");
+      }
     })();
   }, []);
+
+  // Delete the player's row on unmount
+  useEffect(() => {
+    if (!playerId) return;
+    const handleUnload = () => {
+      removePlayerFromRows(playerId);
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      handleUnload();
+    };
+  }, [playerId]);
+
+  // Automatically join a new race as soon as playerId generated or when the roundCount goes up when the player wants to play another race
+  useEffect(() => {
+    if (!playerId) return;
+    (async () => {
+      joinRace();
+    })();
+  }, [roundCount, playerId, joinRace]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (
       <LoadingScreen
         state={pageState}
-        loadMessage="Retrieving a random text just for you."
+        loadMessage="Looking for a race just for you."
         navigate={navigate}
       />
     );
@@ -107,7 +172,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
             id="raceAgainButton"
             className="mediumButton"
             style={{ display: !gameActive ? "block" : "none" }}
-            onClick={createNewRace}
+            onClick={joinRace}
           >
             New race
           </button>
@@ -156,4 +221,4 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
   );
 }
 
-export default Practice;
+export default PublicRace;
