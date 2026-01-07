@@ -34,7 +34,9 @@ export default async ({ req, res, log, error }) => {
 
     log("\nresults:", result);
 
-    const pickedDoc = result.documents[0];
+    const pickedDoc = result.rows[0];
+
+    log("\npickedDoc:", pickedDoc);
 
     return res.json({
       text: pickedDoc.content,
