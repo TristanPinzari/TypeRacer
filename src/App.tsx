@@ -4,7 +4,6 @@ import { Activity, useState } from "react";
 
 function App() {
   const [activeComponent, setActiveComponent] = useState("menu");
-
   return (
     <>
       <div id="backgroundContainer" />

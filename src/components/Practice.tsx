@@ -1,32 +1,38 @@
 import Racetrack from "./Racetrack";
 import Typer from "./Typer";
 
-import { useState, useCallback } from "react";
+import { functions } from "../lib/appwrite";
+
+import { useState, useCallback, useEffect } from "react";
 
 import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
+import LoadingScreen from "./LoadingScreen";
 
-export interface Writing {
-  text: string;
+export interface gameText {
+  content: string;
   origin: string;
   author: string;
   uploader: string;
 }
+
 function Practice({ navigate }: { navigate: (location: string) => void }) {
+  const [pageState, setPageState] = useState("loading");
   const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
   const [finalValues, setFinalValues] = useState({
     wpm: 0,
     time: "",
     accuracy: 0,
   });
+
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
-  const [writing, setWriting] = useState<Writing>({
-    text: "Lorem ipsum dolor sit amet consectetur adipisicing elit.",
-    origin: "Random text generator",
-    author: "i don't know",
-    uploader: "Me (Tristan)",
+  const [gameText, setGameText] = useState<gameText>({
+    content: "",
+    origin: "",
+    author: "",
+    uploader: "",
   });
 
   const handlePulse = useCallback(
@@ -44,9 +50,41 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     []
   );
 
-  function reset() {
+  function resetGame() {
     setRoundCount((prev) => prev + 1);
     setGameActive(true);
+  }
+
+  const fetchData = async () => {
+    try {
+      const result = await functions.createExecution(
+        import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
+      );
+      if (result.status === "completed") {
+        const data = JSON.parse(result.responseBody);
+        setGameText(data);
+        setPageState("ready");
+      }
+    } catch (error) {
+      console.error("Execution failed:", error);
+      setPageState("failed");
+    }
+  };
+
+  function createNewRace() {
+    fetchData().then(() => {
+      resetGame();
+    });
+  }
+
+  useEffect(() => {
+    (async () => {
+      await fetchData();
+    })();
+  }, []);
+
+  if (pageState == "loading" || pageState == "failed") {
+    return <LoadingScreen state={pageState} navigate={navigate} />;
   }
 
   return (
@@ -58,7 +96,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
           key={roundCount}
           handlePulse={handlePulse}
           handleFinish={handleFinish}
-          text={writing.text}
+          text={gameText.content}
         />
         <div id="raceButtonsContainer">
           <button className="mediumButton" onClick={() => navigate("menu")}>
@@ -68,8 +106,9 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
             id="raceAgainButton"
             className="mediumButton"
             style={{ display: !gameActive ? "block" : "none" }}
+            onClick={createNewRace}
           >
-            Race again
+            New race
           </button>
         </div>
         {!gameActive && (
@@ -78,16 +117,16 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
             <div id="infoContent">
               <div>
                 <p>
-                  <span id="origin">{writing.origin}</span>
+                  <span id="origin">{gameText.origin}</span>
                   <br />
-                  <span id="author">Written by: {writing.author}</span>
+                  <span id="author">Written by: {gameText.author}</span>
                   <br />
-                  <span id="uploader">Uploaded by: {writing.uploader}</span>
+                  <span id="uploader">Uploaded by: {gameText.uploader}</span>
                 </p>
                 <button
                   id="againButton"
                   className="mediumButton"
-                  onClick={reset}
+                  onClick={resetGame}
                 >
                   Try again?
                 </button>

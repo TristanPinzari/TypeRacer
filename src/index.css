@@ -412,3 +412,40 @@ body,
 .light #statCard span > :first-child {
   background-color: white;
 }
+
+.LoadingScreen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.LoadingScreen > :first-child {
+  width: 5rem;
+  height: 5rem;
+}
+
+.LoadingScreen.loading > :first-child {
+  animation: spin 2s linear infinite;
+}
+
+.LoadingScreen.failed > :first-child {
+  fill: red;
+}
+
+@keyframes spin {
+  from {
+    rotate: 0;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+.LoadingScreen > :nth-child(2) {
+  font-size: var(--big);
+}
