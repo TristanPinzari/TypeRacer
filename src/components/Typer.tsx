@@ -1,14 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-
-interface FinalStats {
-  wpm: number;
-  time: string;
-  accuracy: number;
-}
+import type { pulse } from "../assets/interfaces";
 
 interface TyperProps {
-  handleFinish: (stats: FinalStats) => void;
-  handlePulse: (stats: { wpm: number; progress: number }) => void;
+  handlePulse: (stats: pulse) => void;
   text: string;
 }
 
@@ -108,7 +102,7 @@ function getDisplayData(
   };
 }
 
-function Typer({ handleFinish, handlePulse, text }: TyperProps) {
+function Typer({ handlePulse, text }: TyperProps) {
   const [textBoxInput, setTextBoxInput] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
 
@@ -138,6 +132,8 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
           totalCorrectCharsRef.current / 5 / (timeRef.current / 60)
         ),
         progress: progressRef.current,
+        accuracy: 0,
+        time: "",
       });
     }, 1000);
   }
@@ -154,17 +150,14 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     const formattedTime = `${mins}:${secs.toString().padStart(2, "0")}`;
-    handleFinish({
-      wpm: newWPM,
-      time: formattedTime,
-      accuracy: Math.round((text.length / keyStrokesRef.current) * 100),
-    });
 
     handlePulse({
       wpm: newWPM,
       progress: progressRef.current,
+      time: formattedTime,
+      accuracy: Math.round((text.length / keyStrokesRef.current) * 100),
     });
-  }, [handleFinish, handlePulse, text]);
+  }, [handlePulse, text]);
 
   useEffect(() => {
     totalCorrectCharsRef.current =
@@ -179,6 +172,8 @@ function Typer({ handleFinish, handlePulse, text }: TyperProps) {
     handlePulse({
       wpm: 0,
       progress: progressRef.current,
+      time: "",
+      accuracy: 0,
     });
   }, [handlePulse]);
 

@@ -7,7 +7,7 @@ import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
-import type { gameText } from "../assets/interfaces";
+import type { gameText, pulse } from "../assets/interfaces";
 import { functions } from "../lib/appwrite";
 
 function addPlayerToRows() {
@@ -44,11 +44,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [playerId, setPlayerId] = useState(null);
   const [pageState, setPageState] = useState("loading");
   const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
-  const [finalValues, setFinalValues] = useState({
-    wpm: 0,
-    time: "",
-    accuracy: 0,
-  });
+  const [finalValues, setFinalValues] = useState<pulse>();
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
   const [gameText, setGameText] = useState<gameText>({
@@ -59,20 +55,13 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     type: "",
   });
 
-  const handlePulse = useCallback(
-    (stats: { wpm: number; progress: number }) => {
-      setLiveValues(stats);
-    },
-    []
-  );
-
-  const handleFinish = useCallback(
-    (stats: { wpm: number; time: string; accuracy: number }) => {
-      setFinalValues(stats);
+  const handlePulse = useCallback((stats: pulse) => {
+    setLiveValues(stats);
+    if (stats.progress == 1) {
       setGameActive(false);
-    },
-    []
-  );
+      setFinalValues(stats);
+    }
+  }, []);
 
   function resetGame() {
     setRoundCount((prev) => prev + 1);
@@ -84,19 +73,22 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       try {
         const response = await updatePlayerStatus(playerId, "searching");
         if (response.status === "completed") {
-          const body = JSON.parse(response.responseBody);
-          if (body.error) {
-            console.error("Function error:", body.error);
+          const reponseBody = JSON.parse(response.responseBody);
+          if (reponseBody.error) {
+            console.error("Function error:", reponseBody.error);
             setPageState("failed");
+          } else {
+            console.log(reponseBody);
           }
         } else {
           setPageState("failed");
         }
       } catch (error) {
         console.error("Function execution failed:", error);
+        setPageState("failed");
       }
     } else {
-      console.error("Tried to join race without playerId");
+      console.error("Tried to join race without a playerId");
       setPageState("failed");
     }
   }, [playerId]);
@@ -161,7 +153,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         <Typer
           key={roundCount}
           handlePulse={handlePulse}
-          handleFinish={handleFinish}
           text={gameText.content}
         />
         <div id="raceButtonsContainer">
@@ -204,15 +195,15 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               <span>
                 <IoIosSpeedometer /> Speed:
               </span>
-              <p>{finalValues.wpm} WPM</p>
+              <p>{finalValues?.wpm} WPM</p>
               <span>
                 <MdTimer /> Time:
               </span>
-              <p>{finalValues.time}</p>
+              <p>{finalValues?.time}</p>
               <span>
                 <AiOutlineAim /> Accuracy
               </span>
-              <p>{finalValues.accuracy}%</p>
+              <p>{finalValues?.accuracy}%</p>
             </div>
           </div>
         )}

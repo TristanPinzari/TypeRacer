@@ -5,3 +5,10 @@ export interface gameText {
   uploader: string;
   type: string;
 }
+
+export interface pulse {
+  wpm: number;
+  progress: number;
+  accuracy: number;
+  time: string;
+}
