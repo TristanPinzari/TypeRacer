@@ -1,5 +1,4 @@
-import { Query } from "appwrite";
-import { Client, ID, TablesDB } from "node-appwrite";
+import { Client, ID, TablesDB, Query } from "node-appwrite";
 
 export default async ({ req, res, log, error }) => {
   // Initialization
