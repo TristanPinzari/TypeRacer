@@ -146,8 +146,7 @@ export default async ({ req, res, log, error }) => {
         let newRaceId = null;
         if (availableRaces.total > 0) {
           const race = availableRaces[0];
-          const updatedPlayers = [...race.playerIds, data.playerId];
-          const updateData = { playerIds: updatedPlayers };
+          const updateData = { players: [...race.players, data.playerId] };
           if (playerCount === 2) {
             updateData.status = "active";
             updateData.startTime = Date.now() + 15000;
