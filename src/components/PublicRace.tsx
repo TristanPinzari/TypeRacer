@@ -8,7 +8,7 @@ import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
 import type { gameText, pulse } from "../assets/interfaces";
-import { client, functions, realtime, tablesDB } from "../lib/appwrite";
+import { functions, realtime, tablesDB } from "../lib/appwrite";
 
 function addPlayerToRows() {
   return functions.createExecution({
@@ -44,7 +44,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [playerId, setPlayerId] = useState(null);
   const [raceId, setRaceId] = useState(null);
   const [raceData, setRaceData] = useState({});
-  const [opponents, setOpponents] = useState([]);
   const [pageState, setPageState] = useState("loading");
   const [raceValues, setRaceValues] = useState<pulse>({
     wpm: 0,
@@ -141,6 +140,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     })();
   }, [roundCount, playerId, queueForRace]);
 
+  // Sets raceData and subscribes to it
   useEffect(() => {
     if (!raceId) return;
     (async () => {
@@ -151,30 +151,29 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           rowId: raceId,
         });
         setRaceData(newRaceData);
-        console.log(newRaceData);
       } catch (error) {
         console.error("Error while retrieving race data:", error);
+        setPageState("failed");
       }
     })();
 
-    const unsubscribe = client.subscribe(
+    const unsubscribe = realtime.subscribe(
       `databases.${
         import.meta.env.VITE_APPWRITE_DATABASE_ID
-      }.collections.players.documents`,
+      }.tables.races.rows.${raceId}`,
       (response) => {
-        console.log(response.payload);
-        // Only care about players in MY race
-        // if (updatedPlayer.raceId === raceId) {
-        //   setOpponents((prev) => ({
-        //     ...prev,
-        //     [updatedPlayer.$id]: updatedPlayer
-        //   }));
-        // }
+        setRaceData(response.payload);
       }
-    );
+    ) as unknown as () => void;
 
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
   }, [raceId]);
+
+  useEffect(() => {}, [raceData]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (

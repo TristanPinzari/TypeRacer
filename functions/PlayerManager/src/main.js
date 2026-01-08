@@ -133,6 +133,22 @@ export default async ({ req, res, log, error }) => {
     case "getRandomText":
       return GetRandomText(false);
 
+    case "getTextById":
+      if (!hasValidArgs([data?.rowId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+
+      try {
+        const text = await tablesDB.getRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "texts",
+          rowId: data.rowId,
+        });
+        return res.json(text, 200);
+      } catch (error) {
+        return res.json({ error: "Failed to fetch" }, 500);
+      }
+
     case "joinRace":
       if (!hasValidArgs([data?.playerId])) {
         return res.json({ error: "Missing parameters" }, 400);
@@ -145,7 +161,6 @@ export default async ({ req, res, log, error }) => {
         });
         let newRaceId = null;
         if (availableRaces.total > 0) {
-          log(availableRaces);
           const race = availableRaces.rows[0];
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };

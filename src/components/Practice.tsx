@@ -43,9 +43,12 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
 
   const fetchData = async () => {
     try {
-      const result = await functions.createExecution(
-        import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
-      );
+      const result = await functions.createExecution({
+        functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+        body: JSON.stringify({
+          action: "getRandomText",
+        }),
+      });
       if (result.status === "completed") {
         const data = JSON.parse(result.responseBody);
         setGameText(data);
