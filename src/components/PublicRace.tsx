@@ -7,7 +7,7 @@ import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
-import type { gameText, pulse } from "../assets/interfaces";
+import type { GameText, Pulse, Race } from "../assets/interfaces";
 import { functions, realtime, tablesDB } from "../lib/appwrite";
 
 function addPlayerToRows() {
@@ -43,9 +43,9 @@ function joinRace(playerId: string) {
 function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [playerId, setPlayerId] = useState(null);
   const [raceId, setRaceId] = useState(null);
-  const [raceData, setRaceData] = useState({});
+  const [raceData, setRaceData] = useState<Race>();
   const [pageState, setPageState] = useState("loading");
-  const [raceValues, setRaceValues] = useState<pulse>({
+  const [raceValues, setRaceValues] = useState<Pulse>({
     wpm: 0,
     progress: 0,
     accuracy: 0,
@@ -53,7 +53,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   });
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
-  const [gameText, setGameText] = useState<gameText>({
+  const [gameText, setGameText] = useState<GameText>({
     content: "ye.",
     origin: "",
     author: "",
@@ -61,7 +61,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     type: "",
   });
 
-  const handlePulse = useCallback((stats: pulse) => {
+  const handlePulse = useCallback((stats: Pulse) => {
     setRaceValues(stats);
     if (stats.progress == 1) {
       setGameActive(false);
@@ -150,7 +150,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           tableId: "races",
           rowId: raceId,
         });
-        setRaceData(newRaceData);
+        setRaceData(newRaceData as unknown as Race);
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
@@ -173,7 +173,33 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     };
   }, [raceId]);
 
-  useEffect(() => {}, [raceData]);
+  useEffect(() => {
+    if (!raceData) return;
+    (async () => {
+      try {
+        const result = await functions.createExecution({
+          functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+          body: JSON.stringify({
+            action: "getTextById",
+            data: { textId: raceData.textId },
+          }),
+        });
+        if (result.status === "completed") {
+          const responseBody = JSON.parse(result.responseBody);
+          if (responseBody.error) {
+            console.error("Function error:", responseBody.error);
+            setPageState("failed");
+          } else {
+            setGameText(responseBody);
+            setPageState("ready");
+          }
+        }
+      } catch (error) {
+        console.error("Execution failed:", error);
+        setPageState("failed");
+      }
+    })();
+  }, [raceData]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (

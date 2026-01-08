@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import type { pulse } from "../assets/interfaces";
+import type { Pulse } from "../assets/interfaces";
 
 interface TyperProps {
-  handlePulse: (stats: pulse) => void;
+  handlePulse: (stats: Pulse) => void;
   text: string;
 }
 

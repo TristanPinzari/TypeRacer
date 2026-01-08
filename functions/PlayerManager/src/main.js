@@ -134,7 +134,7 @@ export default async ({ req, res, log, error }) => {
       return GetRandomText(false);
 
     case "getTextById":
-      if (!hasValidArgs([data?.rowId])) {
+      if (!hasValidArgs([data?.textId])) {
         return res.json({ error: "Missing parameters" }, 400);
       }
 
@@ -142,7 +142,7 @@ export default async ({ req, res, log, error }) => {
         const text = await tablesDB.getRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "texts",
-          rowId: data.rowId,
+          rowId: data.textId,
         });
         return res.json(
           {
