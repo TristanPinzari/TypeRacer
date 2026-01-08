@@ -144,7 +144,16 @@ export default async ({ req, res, log, error }) => {
           tableId: "texts",
           rowId: data.rowId,
         });
-        return res.json(text, 200);
+        return res.json(
+          {
+            content: text.content,
+            origin: text.origin,
+            author: text.author,
+            type: text.type,
+            uploader: text.uploader,
+          },
+          200
+        );
       } catch (error) {
         return res.json({ error: "Failed to fetch" }, 500);
       }
