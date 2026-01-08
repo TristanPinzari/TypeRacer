@@ -145,12 +145,17 @@ export default async ({ req, res, log, error }) => {
         });
         let newRaceId = null;
         if (availableRaces.total > 0) {
-          const race = availableRaces[0];
-          const updateData = { players: [...race.players, data.playerId] };
-          if (playerCount === 2) {
+          log(availableRaces);
+          const race = availableRaces.rows[0];
+          const updatedPlayers = [...race.players, data.playerId];
+          const updateData = { players: updatedPlayers };
+          if (updatedPlayers.length === 2) {
             updateData.status = "active";
             updateData.startTime = Date.now() + 15000;
-          } else if (playerCount === 5 && race.startTime - Date.now() > 5000) {
+          } else if (
+            updatedPlayers.length === 5 &&
+            race.startTime - Date.now() > 5000
+          ) {
             updateData.startTime = Date.now() + 5000;
           }
           await tablesDB.updateRow({

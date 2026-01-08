@@ -13,9 +13,12 @@ import type { gameText, pulse } from "../assets/interfaces";
 
 function Practice({ navigate }: { navigate: (location: string) => void }) {
   const [pageState, setPageState] = useState("loading");
-  const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
-  const [finalValues, setFinalValues] = useState<pulse>();
-
+  const [raceValues, setRaceValues] = useState<pulse>({
+    wpm: 0,
+    progress: 0,
+    accuracy: 0,
+    time: "",
+  });
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
   const [gameText, setGameText] = useState<gameText>({
@@ -27,10 +30,9 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
   });
 
   const handlePulse = useCallback((stats: pulse) => {
-    setLiveValues(stats);
+    setRaceValues(stats);
     if (stats.progress == 1) {
       setGameActive(false);
-      setFinalValues(stats);
     }
   }, []);
 
@@ -81,7 +83,7 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
-        <Racetrack wpm={liveValues.wpm} progress={liveValues.progress} />
+        <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
         <Typer
           key={roundCount}
           handlePulse={handlePulse}
@@ -127,15 +129,15 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
               <span>
                 <IoIosSpeedometer /> Speed:
               </span>
-              <p>{finalValues?.wpm} WPM</p>
+              <p>{raceValues.wpm} WPM</p>
               <span>
                 <MdTimer /> Time:
               </span>
-              <p>{finalValues?.time}</p>
+              <p>{raceValues.time}</p>
               <span>
                 <AiOutlineAim /> Accuracy
               </span>
-              <p>{finalValues?.accuracy}%</p>
+              <p>{raceValues.accuracy}%</p>
             </div>
           </div>
         )}

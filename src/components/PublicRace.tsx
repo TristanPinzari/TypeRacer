@@ -8,7 +8,7 @@ import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
 import type { gameText, pulse } from "../assets/interfaces";
-import { functions } from "../lib/appwrite";
+import { client, functions, realtime, tablesDB } from "../lib/appwrite";
 
 function addPlayerToRows() {
   return functions.createExecution({
@@ -42,9 +42,16 @@ function joinRace(playerId: string) {
 
 function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [playerId, setPlayerId] = useState(null);
+  const [raceId, setRaceId] = useState(null);
+  const [raceData, setRaceData] = useState({});
+  const [opponents, setOpponents] = useState([]);
   const [pageState, setPageState] = useState("loading");
-  const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
-  const [finalValues, setFinalValues] = useState<pulse>();
+  const [raceValues, setRaceValues] = useState<pulse>({
+    wpm: 0,
+    progress: 0,
+    accuracy: 0,
+    time: "",
+  });
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
   const [gameText, setGameText] = useState<gameText>({
@@ -56,10 +63,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   });
 
   const handlePulse = useCallback((stats: pulse) => {
-    setLiveValues(stats);
+    setRaceValues(stats);
     if (stats.progress == 1) {
       setGameActive(false);
-      setFinalValues(stats);
     }
   }, []);
 
@@ -73,12 +79,12 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       try {
         const response = await joinRace(playerId);
         if (response.status === "completed") {
-          const reponseBody = JSON.parse(response.responseBody);
-          if (reponseBody.error) {
-            console.error("Function error:", reponseBody.error);
+          const responseBody = JSON.parse(response.responseBody);
+          if (responseBody.error) {
+            console.error("Function error:", responseBody.error);
             setPageState("failed");
           } else {
-            console.log(reponseBody);
+            setRaceId(responseBody.raceId);
           }
         } else {
           setPageState("failed");
@@ -135,6 +141,41 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     })();
   }, [roundCount, playerId, queueForRace]);
 
+  useEffect(() => {
+    if (!raceId) return;
+    (async () => {
+      try {
+        const newRaceData = await tablesDB.getRow({
+          databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: raceId,
+        });
+        setRaceData(newRaceData);
+        console.log(newRaceData);
+      } catch (error) {
+        console.error("Error while retrieving race data:", error);
+      }
+    })();
+
+    const unsubscribe = client.subscribe(
+      `databases.${
+        import.meta.env.VITE_APPWRITE_DATABASE_ID
+      }.collections.players.documents`,
+      (response) => {
+        console.log(response.payload);
+        // Only care about players in MY race
+        // if (updatedPlayer.raceId === raceId) {
+        //   setOpponents((prev) => ({
+        //     ...prev,
+        //     [updatedPlayer.$id]: updatedPlayer
+        //   }));
+        // }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [raceId]);
+
   if (pageState == "loading" || pageState == "failed") {
     return (
       <LoadingScreen
@@ -149,7 +190,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
-        <Racetrack wpm={liveValues.wpm} progress={liveValues.progress} />
+        <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
         <Typer
           key={roundCount}
           handlePulse={handlePulse}
@@ -195,15 +236,15 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               <span>
                 <IoIosSpeedometer /> Speed:
               </span>
-              <p>{finalValues?.wpm} WPM</p>
+              <p>{raceValues.wpm} WPM</p>
               <span>
                 <MdTimer /> Time:
               </span>
-              <p>{finalValues?.time}</p>
+              <p>{raceValues.time}</p>
               <span>
                 <AiOutlineAim /> Accuracy
               </span>
-              <p>{finalValues?.accuracy}%</p>
+              <p>{raceValues.accuracy}%</p>
             </div>
           </div>
         )}
