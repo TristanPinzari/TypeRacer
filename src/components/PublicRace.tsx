@@ -30,12 +30,12 @@ function removePlayerFromRows(playerId: string) {
   });
 }
 
-function updatePlayerStatus(playerId: string, newStatus: string) {
+function joinRace(playerId: string) {
   return functions.createExecution({
     functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
     body: JSON.stringify({
-      action: "updatePlayerStatus",
-      data: { playerId: playerId, newStatus: newStatus },
+      action: "joinRace",
+      data: { playerId: playerId },
     }),
   });
 }
@@ -68,10 +68,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     setGameActive(true);
   }
 
-  const joinRace = useCallback(async () => {
+  const queueForRace = useCallback(async () => {
     if (playerId) {
       try {
-        const response = await updatePlayerStatus(playerId, "searching");
+        const response = await joinRace(playerId);
         if (response.status === "completed") {
           const reponseBody = JSON.parse(response.responseBody);
           if (reponseBody.error) {
@@ -131,9 +131,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   useEffect(() => {
     if (!playerId) return;
     (async () => {
-      joinRace();
+      queueForRace();
     })();
-  }, [roundCount, playerId, joinRace]);
+  }, [roundCount, playerId, queueForRace]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (
@@ -163,7 +163,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             id="raceAgainButton"
             className="mediumButton"
             style={{ display: !gameActive ? "block" : "none" }}
-            onClick={joinRace}
+            onClick={queueForRace}
           >
             New race
           </button>
