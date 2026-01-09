@@ -168,9 +168,8 @@ export default async ({ req, res, log, error }) => {
           ],
         });
         const availableRaces = [...startingRaces.rows, ...waitingRaces.rows];
-        log(availableRaces);
         let newRaceId = null;
-        if (availableRaces.total > 0) {
+        if (availableRaces.length > 0) {
           const race = availableRaces.rows[0];
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };
@@ -192,7 +191,6 @@ export default async ({ req, res, log, error }) => {
         } else {
           const newId = ID.unique();
           const newTextId = await GetRandomText(true);
-          log(newTextId);
           await tablesDB.createRow({
             databaseId: process.env.APPWRITE_DATABASE_ID,
             tableId: "races",
