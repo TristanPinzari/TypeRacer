@@ -170,7 +170,7 @@ export default async ({ req, res, log, error }) => {
         const availableRaces = [...startingRaces.rows, ...waitingRaces.rows];
         let newRaceId = null;
         if (availableRaces.length > 0) {
-          const race = availableRaces.rows[0];
+          const race = availableRaces[0];
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };
           if (updatedPlayers.length === 2) {
