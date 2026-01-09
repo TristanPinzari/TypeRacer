@@ -180,6 +180,7 @@ export default async ({ req, res, log, error }) => {
         } else {
           const newId = ID.unique();
           const newTextId = await GetRandomText(true);
+          log(newTextId);
           await tablesDB.createRow({
             databaseId: process.env.APPWRITE_DATABASE_ID,
             tableId: "races",
