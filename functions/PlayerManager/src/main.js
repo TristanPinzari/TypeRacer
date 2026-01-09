@@ -1,4 +1,11 @@
-import { Client, ID, TablesDB, Query } from "node-appwrite";
+import {
+  Client,
+  ID,
+  TablesDB,
+  Query,
+  Functions,
+  ExecutionMethod,
+} from "node-appwrite";
 
 export default async ({ req, res, log, error }) => {
   // Initialization
@@ -92,24 +99,6 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Failed to fetch" }, 500);
       }
 
-    // case "updatePlayerStatus":
-    //   if (!hasValidArgs([data?.playerId, data?.newStatus])) {
-    //     return res.json({ error: "Missing parameters" }, 400);
-    //   }
-
-    //   try {
-    //     await tablesDB.updateRow({
-    //       databaseId: process.env.APPWRITE_DATABASE_ID,
-    //       tableId: "players",
-    //       rowId: data.playerId,
-    //       data: { status: data.newStatus },
-    //     });
-    //     return res.json({}, 200);
-    //   } catch (err) {
-    //     error("Error: " + err.message);
-    //     return res.json({ error: "Failed to fetch" }, 500);
-    //   }
-
     case "updatePlayerLastSeen":
       if (!hasValidArgs([data?.playerId])) {
         return res.json({ error: "Missing parameters" }, 400);
@@ -174,7 +163,6 @@ export default async ({ req, res, log, error }) => {
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };
           if (updatedPlayers.length === 2) {
-            updateData.status = "active";
             updateData.startTime = Date.now() + 15000;
           } else if (
             updatedPlayers.length === 5 &&

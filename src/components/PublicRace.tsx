@@ -1,14 +1,17 @@
 import Racetrack from "./Racetrack";
-import Typer from "./Typer";
-
-import { useState, useCallback, useEffect } from "react";
-
+import { useState, useCallback, useEffect, useRef } from "react";
 import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
 import type { GameText, Pulse, Race } from "../assets/interfaces";
 import { functions, realtime, tablesDB } from "../lib/appwrite";
+import PublicTyper from "./PublicTyper";
+
+export interface TyperMethods {
+  startTimer: () => void;
+  End: () => void;
+}
 
 function addPlayerToRows() {
   return functions.createExecution({
@@ -52,7 +55,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     time: "",
   });
   const [roundCount, setRoundCount] = useState(0);
-  const [gameActive, setGameActive] = useState(true);
+  const [gameStatus, setGameStatus] = useState("Looking for more players...");
   const [gameText, setGameText] = useState<GameText>({
     content: "ye.",
     origin: "",
@@ -61,20 +64,19 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     type: "",
   });
 
+  const TyperRef = useRef<TyperMethods>(null);
+  const statusRef = useRef("waiting");
+
   const handlePulse = useCallback((stats: Pulse) => {
     setRaceValues(stats);
     if (stats.progress == 1) {
-      setGameActive(false);
+      setGameStatus("finished");
     }
   }, []);
 
-  function resetGame() {
-    setRoundCount((prev) => prev + 1);
-    setGameActive(true);
-  }
-
   const queueForRace = useCallback(async () => {
     if (playerId) {
+      setPageState("loading");
       try {
         const response = await joinRace(playerId);
         if (response.status === "completed") {
@@ -191,12 +193,23 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             setPageState("failed");
           } else {
             setGameText(responseBody);
+            setRoundCount((prev) => prev + 1);
             setPageState("ready");
           }
         }
       } catch (error) {
         console.error("Execution failed:", error);
         setPageState("failed");
+      }
+      if (raceData.startTime && statusRef.current == "waiting") {
+        statusRef.current = "active";
+        setTimeout(() => {
+          TyperRef.current?.startTimer();
+          setTimeout(() => {
+            TyperRef.current?.End();
+            setGameStatus("finished");
+          }, 60000);
+        }, Math.max(raceData.startTime - Date.now(), 0));
       }
     })();
   }, [raceData]);
@@ -216,7 +229,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
         <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
-        <Typer
+        <PublicTyper
+          ref={TyperRef}
           key={roundCount}
           handlePulse={handlePulse}
           text={gameText.content}
@@ -228,13 +242,13 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           <button
             id="raceAgainButton"
             className="mediumButton"
-            style={{ display: !gameActive ? "block" : "none" }}
+            style={{ display: gameStatus == "finished" ? "block" : "none" }}
             onClick={queueForRace}
           >
             New race
           </button>
         </div>
-        {!gameActive && (
+        {gameStatus == "finished" && (
           <div id="infoCard" className="card">
             <p>You just typed a quote from:</p>
             <div id="infoContent">
@@ -251,7 +265,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
                 <button
                   id="againButton"
                   className="mediumButton"
-                  onClick={resetGame}
+                  onClick={queueForRace}
                 >
                   Try again?
                 </button>
