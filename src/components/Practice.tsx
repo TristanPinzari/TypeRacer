@@ -9,20 +9,19 @@ import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
-import type { gameText } from "../assets/interfaces";
+import type { GameText, Pulse } from "../assets/interfaces";
 
 function Practice({ navigate }: { navigate: (location: string) => void }) {
   const [pageState, setPageState] = useState("loading");
-  const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
-  const [finalValues, setFinalValues] = useState({
+  const [raceValues, setRaceValues] = useState<Pulse>({
     wpm: 0,
-    time: "",
+    progress: 0,
     accuracy: 0,
+    time: "",
   });
-
   const [roundCount, setRoundCount] = useState(0);
   const [gameActive, setGameActive] = useState(true);
-  const [gameText, setGameText] = useState<gameText>({
+  const [gameText, setGameText] = useState<GameText>({
     content: "",
     origin: "",
     author: "",
@@ -30,20 +29,12 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     type: "",
   });
 
-  const handlePulse = useCallback(
-    (stats: { wpm: number; progress: number }) => {
-      setLiveValues(stats);
-    },
-    []
-  );
-
-  const handleFinish = useCallback(
-    (stats: { wpm: number; time: string; accuracy: number }) => {
-      setFinalValues(stats);
+  const handlePulse = useCallback((stats: Pulse) => {
+    setRaceValues(stats);
+    if (stats.progress == 1) {
       setGameActive(false);
-    },
-    []
-  );
+    }
+  }, []);
 
   function resetGame() {
     setRoundCount((prev) => prev + 1);
@@ -52,9 +43,12 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
 
   const fetchData = async () => {
     try {
-      const result = await functions.createExecution(
-        import.meta.env.VITE_APPWRITE_FUNC_GET_RANDOM_TEXT
-      );
+      const result = await functions.createExecution({
+        functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+        body: JSON.stringify({
+          action: "getRandomText",
+        }),
+      });
       if (result.status === "completed") {
         const data = JSON.parse(result.responseBody);
         setGameText(data);
@@ -92,11 +86,10 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
-        <Racetrack wpm={liveValues.wpm} progress={liveValues.progress} />
+        <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
         <Typer
           key={roundCount}
           handlePulse={handlePulse}
-          handleFinish={handleFinish}
           text={gameText.content}
         />
         <div id="raceButtonsContainer">
@@ -139,15 +132,15 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
               <span>
                 <IoIosSpeedometer /> Speed:
               </span>
-              <p>{finalValues.wpm} WPM</p>
+              <p>{raceValues.wpm} WPM</p>
               <span>
                 <MdTimer /> Time:
               </span>
-              <p>{finalValues.time}</p>
+              <p>{raceValues.time}</p>
               <span>
                 <AiOutlineAim /> Accuracy
               </span>
-              <p>{finalValues.accuracy}%</p>
+              <p>{raceValues.accuracy}%</p>
             </div>
           </div>
         )}

@@ -1,14 +1,17 @@
 import Racetrack from "./Racetrack";
-import Typer from "./Typer";
-
-import { useState, useCallback, useEffect } from "react";
-
+import { useState, useCallback, useEffect, useRef } from "react";
 import { IoIosSpeedometer } from "react-icons/io";
 import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
-import type { gameText } from "../assets/interfaces";
-import { functions } from "../lib/appwrite";
+import type { GameText, Pulse, Race } from "../assets/interfaces";
+import { functions, realtime, tablesDB } from "../lib/appwrite";
+import PublicTyper from "./PublicTyper";
+
+export interface TyperMethods {
+  startTimer: () => void;
+  End: () => void;
+}
 
 function addPlayerToRows() {
   return functions.createExecution({
@@ -30,28 +33,30 @@ function removePlayerFromRows(playerId: string) {
   });
 }
 
-function updatePlayerStatus(playerId: string, newStatus: string) {
+function joinRace(playerId: string) {
   return functions.createExecution({
     functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
     body: JSON.stringify({
-      action: "updatePlayerStatus",
-      data: { playerId: playerId, newStatus: newStatus },
+      action: "joinRace",
+      data: { playerId: playerId },
     }),
   });
 }
 
 function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [playerId, setPlayerId] = useState(null);
+  const [raceId, setRaceId] = useState(null);
+  const [raceData, setRaceData] = useState<Race>();
   const [pageState, setPageState] = useState("loading");
-  const [liveValues, setLiveValues] = useState({ wpm: 0, progress: 0 });
-  const [finalValues, setFinalValues] = useState({
+  const [raceValues, setRaceValues] = useState<Pulse>({
     wpm: 0,
-    time: "",
+    progress: 0,
     accuracy: 0,
+    time: "",
   });
   const [roundCount, setRoundCount] = useState(0);
-  const [gameActive, setGameActive] = useState(true);
-  const [gameText, setGameText] = useState<gameText>({
+  const [gameStatus, setGameStatus] = useState("Looking for more players...");
+  const [gameText, setGameText] = useState<GameText>({
     content: "ye.",
     origin: "",
     author: "",
@@ -59,44 +64,38 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     type: "",
   });
 
-  const handlePulse = useCallback(
-    (stats: { wpm: number; progress: number }) => {
-      setLiveValues(stats);
-    },
-    []
-  );
+  const TyperRef = useRef<TyperMethods>(null);
+  const statusRef = useRef("waiting");
 
-  const handleFinish = useCallback(
-    (stats: { wpm: number; time: string; accuracy: number }) => {
-      setFinalValues(stats);
-      setGameActive(false);
-    },
-    []
-  );
+  const handlePulse = useCallback((stats: Pulse) => {
+    setRaceValues(stats);
+    if (stats.progress == 1) {
+      setGameStatus("finished");
+    }
+  }, []);
 
-  function resetGame() {
-    setRoundCount((prev) => prev + 1);
-    setGameActive(true);
-  }
-
-  const joinRace = useCallback(async () => {
+  const queueForRace = useCallback(async () => {
     if (playerId) {
+      setPageState("loading");
       try {
-        const response = await updatePlayerStatus(playerId, "searching");
+        const response = await joinRace(playerId);
         if (response.status === "completed") {
-          const body = JSON.parse(response.responseBody);
-          if (body.error) {
-            console.error("Function error:", body.error);
+          const responseBody = JSON.parse(response.responseBody);
+          if (responseBody.error) {
+            console.error("Function error:", responseBody.error);
             setPageState("failed");
+          } else {
+            setRaceId(responseBody.raceId);
           }
         } else {
           setPageState("failed");
         }
       } catch (error) {
         console.error("Function execution failed:", error);
+        setPageState("failed");
       }
     } else {
-      console.error("Tried to join race without playerId");
+      console.error("Tried to join race without a playerId");
       setPageState("failed");
     }
   }, [playerId]);
@@ -139,9 +138,80 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   useEffect(() => {
     if (!playerId) return;
     (async () => {
-      joinRace();
+      queueForRace();
     })();
-  }, [roundCount, playerId, joinRace]);
+  }, [roundCount, playerId, queueForRace]);
+
+  // Sets raceData and subscribes to it
+  useEffect(() => {
+    if (!raceId) return;
+    (async () => {
+      try {
+        const newRaceData = await tablesDB.getRow({
+          databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: raceId,
+        });
+        setRaceData(newRaceData as unknown as Race);
+      } catch (error) {
+        console.error("Error while retrieving race data:", error);
+        setPageState("failed");
+      }
+    })();
+
+    const unsubscribe = realtime.subscribe(
+      `databases.${
+        import.meta.env.VITE_APPWRITE_DATABASE_ID
+      }.tables.races.rows.${raceId}`,
+      (response) => {
+        setRaceData(response.payload);
+      }
+    ) as unknown as () => void;
+
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
+  }, [raceId]);
+
+  useEffect(() => {
+    if (!raceData) return;
+    (async () => {
+      try {
+        const result = await functions.createExecution({
+          functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+          body: JSON.stringify({
+            action: "getTextById",
+            data: { textId: raceData.textId },
+          }),
+        });
+        if (result.status === "completed") {
+          const responseBody = JSON.parse(result.responseBody);
+          if (responseBody.error) {
+            console.error("Function error:", responseBody.error);
+            setPageState("failed");
+          } else {
+            setGameText(responseBody);
+            setPageState("ready");
+          }
+        }
+      } catch (error) {
+        console.error("Execution failed:", error);
+        setPageState("failed");
+      }
+      if (raceData.startTime && statusRef.current == "waiting") {
+        statusRef.current = "active";
+        setTimeout(() => {
+          TyperRef.current?.startTimer();
+          setTimeout(() => {
+            TyperRef.current?.End();
+            setGameStatus("finished");
+          }, 60000);
+        }, Math.max(raceData.startTime - Date.now(), 0));
+      }
+    })();
+  }, [raceData, roundCount]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (
@@ -157,11 +227,11 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">The race is on! Type the text below:</p>
-        <Racetrack wpm={liveValues.wpm} progress={liveValues.progress} />
-        <Typer
+        <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
+        <PublicTyper
+          ref={TyperRef}
           key={roundCount}
           handlePulse={handlePulse}
-          handleFinish={handleFinish}
           text={gameText.content}
         />
         <div id="raceButtonsContainer">
@@ -171,13 +241,15 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           <button
             id="raceAgainButton"
             className="mediumButton"
-            style={{ display: !gameActive ? "block" : "none" }}
-            onClick={joinRace}
+            style={{ display: gameStatus == "finished" ? "block" : "none" }}
+            onClick={() => {
+              setRoundCount(roundCount + 1);
+            }}
           >
             New race
           </button>
         </div>
-        {!gameActive && (
+        {gameStatus == "finished" && (
           <div id="infoCard" className="card">
             <p>You just typed a quote from:</p>
             <div id="infoContent">
@@ -194,7 +266,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
                 <button
                   id="againButton"
                   className="mediumButton"
-                  onClick={resetGame}
+                  onClick={() => {
+                    setRoundCount(roundCount + 1);
+                  }}
                 >
                   Try again?
                 </button>
@@ -204,15 +278,15 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               <span>
                 <IoIosSpeedometer /> Speed:
               </span>
-              <p>{finalValues.wpm} WPM</p>
+              <p>{raceValues.wpm} WPM</p>
               <span>
                 <MdTimer /> Time:
               </span>
-              <p>{finalValues.time}</p>
+              <p>{raceValues.time}</p>
               <span>
                 <AiOutlineAim /> Accuracy
               </span>
-              <p>{finalValues.accuracy}%</p>
+              <p>{raceValues.accuracy}%</p>
             </div>
           </div>
         )}
