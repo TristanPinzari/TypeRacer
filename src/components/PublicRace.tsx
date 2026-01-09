@@ -193,7 +193,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             setPageState("failed");
           } else {
             setGameText(responseBody);
-            setRoundCount((prev) => prev + 1);
             setPageState("ready");
           }
         }
@@ -212,7 +211,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }, Math.max(raceData.startTime - Date.now(), 0));
       }
     })();
-  }, [raceData]);
+  }, [raceData, roundCount]);
 
   if (pageState == "loading" || pageState == "failed") {
     return (
@@ -243,7 +242,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             id="raceAgainButton"
             className="mediumButton"
             style={{ display: gameStatus == "finished" ? "block" : "none" }}
-            onClick={queueForRace}
+            onClick={() => {
+              setRoundCount(roundCount + 1);
+            }}
           >
             New race
           </button>
@@ -265,7 +266,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
                 <button
                   id="againButton"
                   className="mediumButton"
-                  onClick={queueForRace}
+                  onClick={() => {
+                    setRoundCount(roundCount + 1);
+                  }}
                 >
                   Try again?
                 </button>

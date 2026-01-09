@@ -152,11 +152,22 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Missing parameters" }, 400);
       }
       try {
-        const availableRaces = await tablesDB.listRows({
+        const now = Date.now();
+        const startingSoonBuffer = now + 5000;
+        const waitingRaces = await tablesDB.listRows({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
-          queries: [Query.equal("status", "waiting"), Query.limit(1)],
+          queries: [Query.isNull("startTime")],
         });
+        const startingRaces = await tablesDB.listRows({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          queries: [
+            Query.greaterThan("startTime", now),
+            Query.lessThan("startTime", startingSoonBuffer),
+          ],
+        });
+        const availableRaces = [...startingRaces.rows, ...waitingRaces.rows];
         let newRaceId = null;
         if (availableRaces.total > 0) {
           const race = availableRaces.rows[0];
