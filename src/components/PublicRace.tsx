@@ -7,6 +7,7 @@ import LoadingScreen from "./LoadingScreen";
 import type { GameText, Pulse, Race } from "../assets/interfaces";
 import { functions, realtime, tablesDB } from "../lib/appwrite";
 import PublicTyper from "./PublicTyper";
+import PublicRacetrack from "./PublicRacetrack";
 
 export interface TyperMethods {
   startTimer: () => void;
@@ -89,8 +90,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               action: "updateStats",
               data: {
                 playerId: playerId,
-                wpm: raceValues.wpm,
-                progress: raceValues.progress,
+                wpm: stats.wpm,
+                progress: stats.progress,
               },
             }),
           });
@@ -105,7 +106,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }
       })();
     },
-    [playerId, raceValues]
+    [playerId]
   );
 
   const queueForRace = useCallback(async () => {
@@ -211,6 +212,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     };
   }, [raceId]);
 
+  console.log("rerender");
+
   const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -245,7 +248,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
-          console.log("created new timeout");
           finishTimeoutRef.current = setTimeout(() => {
             TyperRef.current?.End();
             setGameStatus("finished");
@@ -257,7 +259,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     return () => {
       if (currentRound != roundCount && finishTimeoutRef.current) {
         clearTimeout(finishTimeoutRef.current);
-        console.log("cleared timeout");
       }
     };
   }, [raceData, roundCount]);
@@ -276,7 +277,14 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">{statuses[gameStatus]}</p>
-        <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
+        <div className="RacetrackContainer">
+          <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
+          {raceData?.players.map((id) => {
+            if (id != playerId) {
+              return <PublicRacetrack key={id} playerId={id} />;
+            }
+          })}
+        </div>
         <PublicTyper
           ref={TyperRef}
           key={roundCount}

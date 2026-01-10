@@ -203,7 +203,8 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
         time: "",
         accuracy: 0,
       });
-    }, [handlePulse]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function HandleChange(e: React.ChangeEvent<HTMLInputElement>) {
       const value = e.target.value;
