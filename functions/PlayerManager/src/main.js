@@ -219,7 +219,9 @@ export default async ({ req, res, log, error }) => {
           rowId: data.playerId,
           data: { wpm: data.wpm, progress: data.progress },
         });
+        return res.json({}, 200);
       } catch (error) {
+        log(error);
         return res.json({ error: "Failed to update" }, 500);
       }
 
