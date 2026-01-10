@@ -13,6 +13,14 @@ export interface TyperMethods {
   End: () => void;
 }
 
+type GameStatus = "waiting" | "active" | "finished";
+
+const statuses: Record<GameStatus, string> = {
+  waiting: "Waiting for players...",
+  active: "Race in progress!",
+  finished: "Race complete!",
+};
+
 function addPlayerToRows() {
   return functions.createExecution({
     functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
@@ -55,7 +63,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     time: "",
   });
   const [roundCount, setRoundCount] = useState(0);
-  const [gameStatus, setGameStatus] = useState("Looking for more players...");
+  const [gameStatus, setGameStatus] = useState<GameStatus>("waiting");
   const [gameText, setGameText] = useState<GameText>({
     content: "ye.",
     origin: "",
@@ -67,15 +75,42 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const TyperRef = useRef<TyperMethods>(null);
   const statusRef = useRef("waiting");
 
-  const handlePulse = useCallback((stats: Pulse) => {
-    setRaceValues(stats);
-    if (stats.progress == 1) {
-      setGameStatus("finished");
-    }
-  }, []);
+  const handlePulse = useCallback(
+    (stats: Pulse) => {
+      setRaceValues(stats);
+      if (stats.progress == 1) {
+        setGameStatus("finished");
+      }
+      (async () => {
+        try {
+          const result = await functions.createExecution({
+            functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+            body: JSON.stringify({
+              action: "updateStats",
+              data: {
+                playerId: playerId,
+                wpm: raceValues.wpm,
+                progress: raceValues.progress,
+              },
+            }),
+          });
+          if (result.status === "completed") {
+            const responseBody = JSON.parse(result.responseBody);
+            if (responseBody.error) {
+              console.error("Pulse error:", responseBody.error);
+            }
+          }
+        } catch (error) {
+          console.error("Pulse failed:", error);
+        }
+      })();
+    },
+    [playerId, raceValues]
+  );
 
   const queueForRace = useCallback(async () => {
     if (playerId) {
+      setGameStatus("waiting");
       setPageState("loading");
       try {
         const response = await joinRace(playerId);
@@ -138,6 +173,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   useEffect(() => {
     if (!playerId) return;
     (async () => {
+      setPageState("loading");
       queueForRace();
     })();
   }, [roundCount, playerId, queueForRace]);
@@ -175,6 +211,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     };
   }, [raceId]);
 
+  const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!raceData) return;
     (async () => {
@@ -193,7 +231,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             setPageState("failed");
           } else {
             setGameText(responseBody);
-            setPageState("ready");
+            setTimeout(() => {
+              setPageState("ready");
+            }, 0);
           }
         }
       } catch (error) {
@@ -204,13 +244,22 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         statusRef.current = "active";
         setTimeout(() => {
           TyperRef.current?.startTimer();
-          setTimeout(() => {
+          setGameStatus("active");
+          console.log("created new timeout");
+          finishTimeoutRef.current = setTimeout(() => {
             TyperRef.current?.End();
             setGameStatus("finished");
-          }, 60000);
+          }, 30000);
         }, Math.max(raceData.startTime - Date.now(), 0));
       }
     })();
+    const currentRound = roundCount;
+    return () => {
+      if (currentRound != roundCount && finishTimeoutRef.current) {
+        clearTimeout(finishTimeoutRef.current);
+        console.log("cleared timeout");
+      }
+    };
   }, [raceData, roundCount]);
 
   if (pageState == "loading" || pageState == "failed") {
@@ -226,7 +275,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   return (
     <div id="practiceContainer" className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
-        <p id="raceOn">The race is on! Type the text below:</p>
+        <p id="raceOn">{statuses[gameStatus]}</p>
         <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
         <PublicTyper
           ref={TyperRef}

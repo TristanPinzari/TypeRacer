@@ -179,6 +179,7 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
         accuracy: Math.round((text.length / keyStrokesRef.current) * 100),
       });
     }, [handlePulse, text, raceEnded]);
+    const EndCallback = useRef<() => void>(End);
 
     useImperativeHandle(ref, () => ({
       startTimer,
@@ -191,10 +192,9 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
         displayData.correctWords.length + displayData.correctUnderline.length;
       progressRef.current = displayData.progress;
       if (displayData.progress == 1) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        End();
+        EndCallback.current();
       }
-    }, [displayData, End, raceEnded]);
+    }, [displayData, raceEnded]);
 
     useEffect(() => {
       handlePulse({

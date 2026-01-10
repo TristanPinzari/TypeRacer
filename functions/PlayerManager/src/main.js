@@ -117,8 +117,6 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Failed to fetch" }, 500);
       }
 
-    // case "getTextById":
-
     case "getRandomText":
       return GetRandomText(false);
 
@@ -207,8 +205,22 @@ export default async ({ req, res, log, error }) => {
         });
         return res.json({ raceId: newRaceId }, 200);
       } catch (err) {
-        error("Error: " + err.message);
         return res.json({ error: "Failed to fetch" }, 500);
+      }
+
+    case "updateStats":
+      if (!hasValidArgs([data?.playerId, data?.wpm, data?.progress])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      try {
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+          data: { wpm: data.wpm, progress: data.progress },
+        });
+      } catch (error) {
+        return res.json({ error: "Failed to update" }, 500);
       }
 
     default:
