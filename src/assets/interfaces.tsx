@@ -19,4 +19,5 @@ export interface Race {
   textId: string;
   players: string[];
   startTime?: number;
+  host?: string;
 }

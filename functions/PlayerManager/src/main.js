@@ -155,12 +155,13 @@ export default async ({ req, res, log, error }) => {
         const waitingRaces = await tablesDB.listRows({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
-          queries: [Query.isNull("startTime")],
+          queries: [Query.isNull("startTime"), Query.isNull("host")],
         });
         const startingRaces = await tablesDB.listRows({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           queries: [
+            Query.isNull("host"),
             Query.greaterThan("startTime", now),
             Query.lessThan("startTime", startingSoonBuffer),
           ],
@@ -172,12 +173,12 @@ export default async ({ req, res, log, error }) => {
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };
           if (updatedPlayers.length === 2) {
-            updateData.startTime = Date.now() + 15000;
+            updateData.startTime = Date.now() + 10000;
           } else if (
             updatedPlayers.length === 5 &&
             race.startTime - Date.now() > 5000
           ) {
-            updateData.startTime = Date.now() + 5000;
+            updateData.startTime = Date.now() + 3000;
           }
           await tablesDB.updateRow({
             databaseId: process.env.APPWRITE_DATABASE_ID,
@@ -208,6 +209,111 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Failed to fetch" }, 500);
       }
 
+    case "joinRaceById":
+      if (!hasValidArgs([data?.playerId, data?.raceId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      try {
+        await tablesDB.getRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+        });
+      } catch (error) {
+        return res.json({ error: error }, 404);
+      }
+      try {
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+          data: { raceId: data.raceId },
+        });
+        return res.json({ raceId: data.raceId }, 200);
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+
+    case "createPrivateRace":
+      if (!hasValidArgs([data?.playerId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      const newId = ID.unique();
+      try {
+        const newTextId = await GetRandomText(true);
+        await tablesDB.createRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: newId,
+          data: {
+            textId: newTextId,
+            players: [data.playerId],
+            host: data.playerId,
+          },
+        });
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+      try {
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "players",
+          rowId: data.playerId,
+          data: { raceId: newId },
+        });
+        return res.json({ raceId: newId }, 200);
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+
+    case "startRace":
+      if (!hasValidArgs([data?.raceId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      try {
+        const race = await tablesDB.getRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+        });
+        if (race.startTime && race.status == "active") {
+          return res.json({ error: "Race is already ongoing." }, 400);
+        }
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+          data: { startTime: Date.now() + 3000, status: "active" },
+        });
+        return res.json({}, 200);
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+
+    case "endRace":
+      if (!hasValidArgs([data?.raceId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      try {
+        const race = await tablesDB.getRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+        });
+        if (race.status == "finished") {
+          return res.json({ error: "Race has already ended." }, 400);
+        }
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+          data: { startTime: null, status: "finished" },
+        });
+        return res.json({}, 200);
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+
     case "updateStats":
       if (!hasValidArgs([data?.playerId, data?.wpm, data?.progress])) {
         return res.json({ error: "Missing parameters" }, 400);
@@ -221,8 +327,7 @@ export default async ({ req, res, log, error }) => {
         });
         return res.json({}, 200);
       } catch (error) {
-        log(error);
-        return res.json({ error: "Failed to update" }, 500);
+        return res.json({ error: error }, 500);
       }
 
     default:

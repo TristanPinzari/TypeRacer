@@ -42,17 +42,53 @@ function removePlayerFromRows(playerId: string) {
   });
 }
 
-function joinRace(playerId: string) {
+function joinRaceById(playerId: string, raceId: string) {
   return functions.createExecution({
     functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
     body: JSON.stringify({
-      action: "joinRace",
+      action: "joinRaceById",
+      data: { playerId: playerId, raceId: raceId },
+    }),
+  });
+}
+
+function createPrivateRace(playerId: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "createPrivateRace",
       data: { playerId: playerId },
     }),
   });
 }
 
-function PublicRace({ navigate }: { navigate: (location: string) => void }) {
+function startRace(raceId: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "startRace",
+      data: { raceId: raceId },
+    }),
+  });
+}
+
+function endRace(raceId: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "endRace",
+      data: { raceId: raceId },
+    }),
+  });
+}
+
+function PrivateRace({
+  privateRaceId,
+  navigate,
+}: {
+  privateRaceId: string | null;
+  navigate: (location: string) => void;
+}) {
   const [playerId, setPlayerId] = useState(null);
   const [raceId, setRaceId] = useState(null);
   const [raceData, setRaceData] = useState<Race>();
@@ -97,8 +133,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           });
           if (result.status === "completed") {
             const responseBody = JSON.parse(result.responseBody);
-            if (responseBody.error) {
-              console.error("Pulse error:", responseBody.error);
+            if (responseBody.responseStatusCode != 200) {
+              console.error("Pulse failed:", responseBody.error);
             }
           }
         } catch (error) {
@@ -108,33 +144,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     },
     [playerId]
   );
-
-  const queueForRace = useCallback(async () => {
-    if (playerId) {
-      setGameStatus("waiting");
-      setPageState("loading");
-      try {
-        const response = await joinRace(playerId);
-        if (response.status === "completed") {
-          const responseBody = JSON.parse(response.responseBody);
-          if (responseBody.error) {
-            console.error("Function error:", responseBody.error);
-            setPageState("failed");
-          } else {
-            setRaceId(responseBody.raceId);
-          }
-        } else {
-          setPageState("failed");
-        }
-      } catch (error) {
-        console.error("Function execution failed:", error);
-        setPageState("failed");
-      }
-    } else {
-      console.error("Tried to join race without a playerId");
-      setPageState("failed");
-    }
-  }, [playerId]);
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
   useEffect(() => {
@@ -177,10 +186,28 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   useEffect(() => {
     if (!playerId) return;
     (async () => {
-      setPageState("loading");
-      queueForRace();
+      try {
+        const response = privateRaceId
+          ? await joinRaceById(playerId, privateRaceId)
+          : await createPrivateRace(playerId);
+        if (response.status === "completed") {
+          const responseBody = JSON.parse(response.responseBody);
+          if (response.responseStatusCode === 200) {
+            setRaceId(responseBody.raceId);
+          } else {
+            console.error("Failed to join/create race:", responseBody.error);
+            setPageState("failed");
+          }
+        } else {
+          console.error(response.errors);
+          setPageState("failed");
+        }
+      } catch (error) {
+        console.error("Function execution failed:", error);
+        setPageState("failed");
+      }
     })();
-  }, [roundCount, playerId, queueForRace]);
+  }, [playerId, privateRaceId]);
 
   // Sets raceData and subscribes to it
   useEffect(() => {
@@ -215,10 +242,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     };
   }, [raceId]);
 
-  console.log("rerender");
-
-  const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
     if (!raceData) return;
     (async () => {
@@ -246,24 +269,23 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Execution failed:", error);
         setPageState("failed");
       }
-      if (raceData.startTime && statusRef.current == "waiting") {
+      if (
+        raceData.status == "active" &&
+        raceData.startTime &&
+        statusRef.current == "waiting"
+      ) {
         statusRef.current = "active";
         setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
-          finishTimeoutRef.current = setTimeout(() => {
-            TyperRef.current?.End();
-            setGameStatus("finished");
-          }, 30000);
         }, Math.max(raceData.startTime - Date.now(), 0));
       }
-    })();
-    const currentRound = roundCount;
-    return () => {
-      if (currentRound != roundCount && finishTimeoutRef.current) {
-        clearTimeout(finishTimeoutRef.current);
+      if (raceData.status == "finished" && statusRef.current == "active") {
+        statusRef.current = "finished";
+        TyperRef.current?.End();
+        setGameStatus("finished");
       }
-    };
+    })();
   }, [raceData, roundCount]);
 
   if (pageState == "loading" || pageState == "failed") {
@@ -298,6 +320,31 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           <button className="mediumButton" onClick={() => navigate("menu")}>
             Main menu
           </button>
+          {raceData?.host == playerId && !raceData?.startTime && (
+            <button
+              className="mediumButton"
+              onClick={() =>
+                raceId
+                  ? startRace(raceId)
+                  : console.log("You can't start a race if you're not in one.")
+              }
+            >
+              StartRace
+            </button>
+          )}
+          {raceData?.host == playerId &&
+            (raceValues.progress == 1 || gameStatus == "finished") && (
+              <button
+                className="mediumButton"
+                onClick={() =>
+                  raceId
+                    ? endRace(raceId)
+                    : console.log("You can't end a race if you're not in one.")
+                }
+              >
+                StartRace
+              </button>
+            )}
           <button
             id="raceAgainButton"
             className="mediumButton"
@@ -355,4 +402,4 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   );
 }
 
-export default PublicRace;
+export default PrivateRace;
