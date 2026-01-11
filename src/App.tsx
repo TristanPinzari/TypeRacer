@@ -5,14 +5,11 @@ import PublicRace from "./components/PublicRace";
 import PrivateRace from "./components/PrivateRace";
 
 function App() {
-  const [activeComponent, setActiveComponent] = useState("menu");
-
   const queryParams = new URLSearchParams(window.location.search);
   const privateRaceId = queryParams.get("id");
-
-  if (privateRaceId) {
-    setActiveComponent("privateRace");
-  }
+  const [activeComponent, setActiveComponent] = useState(
+    privateRaceId ? "privateRace" : "menu"
+  );
 
   return (
     <>

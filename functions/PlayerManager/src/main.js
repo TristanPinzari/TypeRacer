@@ -214,10 +214,16 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Missing parameters" }, 400);
       }
       try {
-        await tablesDB.getRow({
+        const race = await tablesDB.getRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           rowId: data.raceId,
+        });
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+          data: { players: [...race.players, data.playerId] },
         });
       } catch (error) {
         return res.json({ error: error }, 404);
@@ -308,6 +314,23 @@ export default async ({ req, res, log, error }) => {
           tableId: "races",
           rowId: data.raceId,
           data: { startTime: null, status: "finished" },
+        });
+        return res.json({}, 200);
+      } catch (error) {
+        return res.json({ error: error }, 500);
+      }
+
+    case "resetRace":
+      if (!hasValidArgs([data?.raceId])) {
+        return res.json({ error: "Missing parameters" }, 400);
+      }
+      try {
+        const newTextId = await GetRandomText(true);
+        await tablesDB.updateRow({
+          databaseId: process.env.APPWRITE_DATABASE_ID,
+          tableId: "races",
+          rowId: data.raceId,
+          data: { textId: newTextId, startTime: null, status: "waiting" },
         });
         return res.json({}, 200);
       } catch (error) {

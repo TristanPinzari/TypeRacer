@@ -82,6 +82,16 @@ function endRace(raceId: string) {
   });
 }
 
+function resetRace(raceId: string) {
+  return functions.createExecution({
+    functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
+    body: JSON.stringify({
+      action: "resetRace",
+      data: { raceId: raceId },
+    }),
+  });
+}
+
 function PrivateRace({
   privateRaceId,
   navigate,
@@ -110,7 +120,7 @@ function PrivateRace({
   });
 
   const TyperRef = useRef<TyperMethods>(null);
-  const statusRef = useRef("waiting");
+  const lastStatusRef = useRef("waiting");
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
@@ -144,6 +154,14 @@ function PrivateRace({
     },
     [playerId]
   );
+
+  function handleResetRace() {
+    if (!raceId) return;
+    setGameStatus("waiting");
+    setRoundCount(roundCount + 1);
+    lastStatusRef.current = "waiting";
+    resetRace(raceId);
+  }
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
   useEffect(() => {
@@ -272,16 +290,16 @@ function PrivateRace({
       if (
         raceData.status == "active" &&
         raceData.startTime &&
-        statusRef.current == "waiting"
+        lastStatusRef.current == "waiting"
       ) {
-        statusRef.current = "active";
+        lastStatusRef.current = "active";
         setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
         }, Math.max(raceData.startTime - Date.now(), 0));
       }
-      if (raceData.status == "finished" && statusRef.current == "active") {
-        statusRef.current = "finished";
+      if (raceData.status == "finished" && lastStatusRef.current == "active") {
+        lastStatusRef.current = "finished";
         TyperRef.current?.End();
         setGameStatus("finished");
       }
@@ -300,6 +318,9 @@ function PrivateRace({
 
   return (
     <div id="practiceContainer" className="componentContainer">
+      {raceData?.host == playerId && (
+        <p>{window.location.href + "race?id=" + raceId}</p>
+      )}
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">{statuses[gameStatus]}</p>
         <div className="RacetrackContainer">
@@ -320,7 +341,7 @@ function PrivateRace({
           <button className="mediumButton" onClick={() => navigate("menu")}>
             Main menu
           </button>
-          {raceData?.host == playerId && !raceData?.startTime && (
+          {raceData?.host == playerId && raceData?.status == "waiting" && (
             <button
               className="mediumButton"
               onClick={() =>
@@ -329,32 +350,31 @@ function PrivateRace({
                   : console.log("You can't start a race if you're not in one.")
               }
             >
-              StartRace
+              Start race
             </button>
           )}
-          {raceData?.host == playerId &&
-            (raceValues.progress == 1 || gameStatus == "finished") && (
-              <button
-                className="mediumButton"
-                onClick={() =>
-                  raceId
-                    ? endRace(raceId)
-                    : console.log("You can't end a race if you're not in one.")
-                }
-              >
-                StartRace
-              </button>
-            )}
-          <button
-            id="raceAgainButton"
-            className="mediumButton"
-            style={{ display: gameStatus == "finished" ? "block" : "none" }}
-            onClick={() => {
-              setRoundCount(roundCount + 1);
-            }}
-          >
-            New race
-          </button>
+          {raceData?.host == playerId && raceData?.status == "active" && (
+            <button
+              className="mediumButton"
+              onClick={() =>
+                raceId
+                  ? endRace(raceId)
+                  : console.log("You can't end a race if you're not in one.")
+              }
+            >
+              End race
+            </button>
+          )}
+          {raceData?.host == playerId && raceData?.status == "finished" && (
+            <button
+              id="raceAgainButton"
+              className="mediumButton"
+              style={{ display: gameStatus == "finished" ? "block" : "none" }}
+              onClick={handleResetRace}
+            >
+              New race
+            </button>
+          )}
         </div>
         {gameStatus == "finished" && (
           <div id="infoCard" className="card">

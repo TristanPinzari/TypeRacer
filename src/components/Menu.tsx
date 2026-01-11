@@ -41,7 +41,9 @@ function Menu({ navigate }: { navigate: (location: string) => void }) {
         <div className="card flexColumnGap">
           <p className="header">Race your friends</p>
           <p>Create your own racetrack and play with friends</p>
-          <button className="bigButton">Create racetrack</button>
+          <button className="bigButton" onClick={() => navigate("privateRace")}>
+            Create racetrack
+          </button>
         </div>
       </div>
     </div>
