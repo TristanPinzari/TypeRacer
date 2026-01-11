@@ -18,8 +18,6 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
         });
       }
     ) as unknown as () => void;
-    console.log("subscribed to ", playerId);
-
     return () => {
       if (typeof unsubscribe === "function") {
         console.log("uunsubscirbed");

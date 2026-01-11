@@ -84,7 +84,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       }
       (async () => {
         try {
-          const result = await functions.createExecution({
+          const response = await functions.createExecution({
             functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
             body: JSON.stringify({
               action: "updateStats",
@@ -95,10 +95,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               },
             }),
           });
-          if (result.status === "completed") {
-            const responseBody = JSON.parse(result.responseBody);
-            if (responseBody.error) {
-              console.error("Pulse error:", responseBody.error);
+          if (response.status === "completed") {
+            if (response.responseStatusCode != 200) {
+              const responseBody = JSON.parse(response.responseBody);
+              console.error(responseBody.error);
             }
           }
         } catch (error) {

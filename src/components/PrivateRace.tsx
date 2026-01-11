@@ -8,6 +8,7 @@ import type { GameText, Pulse, Race } from "../assets/interfaces";
 import { functions, realtime, tablesDB } from "../lib/appwrite";
 import PublicTyper from "./PublicTyper";
 import PublicRacetrack from "./PublicRacetrack";
+import { FaCopy } from "react-icons/fa";
 
 export interface TyperMethods {
   startTimer: () => void;
@@ -92,6 +93,16 @@ function resetRace(raceId: string) {
   });
 }
 
+async function copyToClipboard(copyText: string) {
+  try {
+    await navigator.clipboard.writeText(copyText);
+
+    alert("Copied to clipboard!");
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+  }
+}
+
 function PrivateRace({
   privateRaceId,
   navigate,
@@ -130,7 +141,7 @@ function PrivateRace({
       }
       (async () => {
         try {
-          const result = await functions.createExecution({
+          const response = await functions.createExecution({
             functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
             body: JSON.stringify({
               action: "updateStats",
@@ -141,10 +152,10 @@ function PrivateRace({
               },
             }),
           });
-          if (result.status === "completed") {
-            const responseBody = JSON.parse(result.responseBody);
-            if (responseBody.responseStatusCode != 200) {
-              console.error("Pulse failed:", responseBody.error);
+          if (response.status === "completed") {
+            if (response.responseStatusCode != 200) {
+              const responseBody = JSON.parse(response.responseBody);
+              console.error(responseBody.error);
             }
           }
         } catch (error) {
@@ -154,14 +165,6 @@ function PrivateRace({
     },
     [playerId]
   );
-
-  function handleResetRace() {
-    if (!raceId) return;
-    setGameStatus("waiting");
-    setRoundCount(roundCount + 1);
-    lastStatusRef.current = "waiting";
-    resetRace(raceId);
-  }
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
   useEffect(() => {
@@ -287,6 +290,7 @@ function PrivateRace({
         console.error("Execution failed:", error);
         setPageState("failed");
       }
+      // Status switched to active
       if (
         raceData.status == "active" &&
         raceData.startTime &&
@@ -298,10 +302,17 @@ function PrivateRace({
           setGameStatus("active");
         }, Math.max(raceData.startTime - Date.now(), 0));
       }
+      // Status switched to finished
       if (raceData.status == "finished" && lastStatusRef.current == "active") {
         lastStatusRef.current = "finished";
         TyperRef.current?.End();
         setGameStatus("finished");
+      }
+      // Status switched to waiting
+      if (raceData.status == "waiting" && lastStatusRef.current == "finished") {
+        setGameStatus("waiting");
+        setRoundCount(roundCount + 1);
+        lastStatusRef.current = "waiting";
       }
     })();
   }, [raceData, roundCount]);
@@ -319,7 +330,27 @@ function PrivateRace({
   return (
     <div id="practiceContainer" className="componentContainer">
       {raceData?.host == playerId && (
-        <p>{window.location.href + "race?id=" + raceId}</p>
+        <div
+          className="card"
+          style={{
+            width: "fit-content",
+            display: "flex",
+            justifyContent: "center",
+            gap: "1rem",
+            padding: "1rem",
+          }}
+        >
+          Invite your friends with link:
+          <a style={{ textDecoration: "underline" }}>
+            {window.location.href + "race?id=" + raceId}
+          </a>
+          <FaCopy
+            style={{ cursor: "pointer" }}
+            onClick={() =>
+              copyToClipboard(window.location.href + "race?id=" + raceId)
+            }
+          />
+        </div>
       )}
       <div id="raceContainer" className="card flexColumnGap">
         <p id="raceOn">{statuses[gameStatus]}</p>
@@ -370,7 +401,7 @@ function PrivateRace({
               id="raceAgainButton"
               className="mediumButton"
               style={{ display: gameStatus == "finished" ? "block" : "none" }}
-              onClick={handleResetRace}
+              onClick={() => (raceId ? resetRace(raceId) : null)}
             >
               New race
             </button>
