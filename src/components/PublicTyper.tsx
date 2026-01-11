@@ -299,7 +299,10 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
           onCut={(e) => e.preventDefault()}
           autoComplete="off"
           autoFocus
-          disabled={displayData.progress == 1 || raceEnded || !raceStarted}
+          disabled={!raceStarted}
+          style={{
+            display: displayData.progress == 1 || raceEnded ? "none" : "block",
+          }}
         />
       </div>
     );

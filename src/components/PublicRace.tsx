@@ -17,7 +17,7 @@ export interface TyperMethods {
 type GameStatus = "waiting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
-  waiting: "Waiting for players...",
+  waiting: "Waiting for more players...",
   active: "Race in progress!",
   finished: "Race complete!",
 };
@@ -84,7 +84,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       }
       (async () => {
         try {
-          const result = await functions.createExecution({
+          const response = await functions.createExecution({
             functionId: import.meta.env.VITE_APPWRITE_FUNC_PLAYER_MANAGER,
             body: JSON.stringify({
               action: "updateStats",
@@ -95,10 +95,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               },
             }),
           });
-          if (result.status === "completed") {
-            const responseBody = JSON.parse(result.responseBody);
-            if (responseBody.error) {
-              console.error("Pulse error:", responseBody.error);
+          if (response.status === "completed") {
+            if (response.responseStatusCode != 200) {
+              const responseBody = JSON.parse(response.responseBody);
+              console.error(responseBody.error);
             }
           }
         } catch (error) {
@@ -142,13 +142,16 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       try {
         const response = await addPlayerToRows();
         if (response.status === "completed") {
-          const reponseBody = JSON.parse(response.responseBody);
-          if (reponseBody.playerId) {
-            setPlayerId(reponseBody.playerId);
+          const responseBody = JSON.parse(response.responseBody);
+          if (response.responseStatusCode == 200) {
+            setPlayerId(responseBody.playerId);
           } else {
-            console.error("Function error:", reponseBody.error);
+            console.error("Failed adding player to rows:", responseBody.error);
             setPageState("failed");
           }
+        } else {
+          console.error("Failed adding player to rows, response incomplete.");
+          setPageState("failed");
         }
       } catch (error) {
         console.error("Function execution failed:", error);
