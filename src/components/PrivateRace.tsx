@@ -96,7 +96,6 @@ function resetRace(raceId: string) {
 async function copyToClipboard(copyText: string) {
   try {
     await navigator.clipboard.writeText(copyText);
-
     alert("Copied to clipboard!");
   } catch (err) {
     console.error("Failed to copy: ", err);

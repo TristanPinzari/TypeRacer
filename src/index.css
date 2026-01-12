@@ -169,6 +169,10 @@ body,
   width: clamp(350px, 90vw, 900px);
 }
 
+#menuContainer > * {
+  width: 100%;
+}
+
 #menuOtherCards > * {
   flex: 1 1;
   min-width: 350px;
