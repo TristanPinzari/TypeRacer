@@ -87,6 +87,7 @@ body,
   box-sizing: border-box;
   padding: 2rem;
   border: 1px solid var(--border-muted);
+  width: 100%;
 }
 
 .bold {
@@ -131,6 +132,7 @@ body,
   gap: 2rem;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
 .componentContainer > * {
@@ -169,7 +171,13 @@ body,
   width: clamp(350px, 90vw, 900px);
 }
 
-#menuContainer > * {
+@media (width <= 795px) {
+  #menuContainer {
+    gap: 1rem;
+  }
+}
+
+#menuOtherCards {
   width: 100%;
 }
 
@@ -204,7 +212,7 @@ body,
   justify-content: center;
 }
 
-#raceOn {
+.raceOn {
   font-size: var(--big);
   font-weight: bold;
 }
@@ -360,7 +368,7 @@ body,
 
 #infoContent,
 #statCard {
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 #infoContent {
@@ -459,4 +467,44 @@ body,
 
 .LoadingScreen > :nth-child(2) {
   font-size: var(--big);
+}
+
+.secondary {
+  background-color: var(--secondary);
+}
+
+.TrafficLight {
+  width: fit-content;
+  border-radius: 50px;
+  display: flex;
+  justify-content: space-evenly;
+  padding: 10px;
+  gap: 5px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% -50%;
+}
+
+.TrafficLight > * {
+  width: 40px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.TrafficLight > :first-child {
+  background-color: var(--danger);
+}
+
+.TrafficLight > :nth-child(2) {
+  background-color: rgb(209, 209, 0);
+}
+
+.TrafficLight > :last-child {
+  background-color: var(--success);
+}
+
+.TrafficLight > .active {
+  opacity: 1;
 }

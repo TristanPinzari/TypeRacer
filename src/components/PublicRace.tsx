@@ -14,12 +14,13 @@ export interface TyperMethods {
   End: () => void;
 }
 
-type GameStatus = "waiting" | "active" | "finished";
+type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
   waiting: "Waiting for more players...",
-  active: "Race in progress!",
-  finished: "Race complete!",
+  starting: "Starting in ",
+  active: "The race is on!",
+  finished: "Race over!",
 };
 
 function addPlayerToRows() {
@@ -72,9 +73,31 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     uploader: "",
     type: "",
   });
+  const [countDown, setCountDown] = useState<number | null>(null);
 
   const TyperRef = useRef<TyperMethods>(null);
   const statusRef = useRef("waiting");
+  const gameStatusToActiveTimeoutRef =
+    useRef<ReturnType<typeof setTimeout>>(null);
+  const countDownIntervalRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  function clearRefsForNewGame() {
+    const refsToClear = [gameStatusToActiveTimeoutRef, countDownIntervalRef];
+    for (const ref of refsToClear) {
+      if (ref.current) {
+        clearTimeout(ref.current);
+        ref.current = null;
+      }
+    }
+  }
+
+  function startCountDownFrom(seconds: number) {
+    seconds = Math.round(seconds);
+    setCountDown(seconds);
+    countDownIntervalRef.current = setInterval(() => {
+      setCountDown((s) => (s == null ? null : s > 0 ? s - 1 : 0));
+    }, 1000);
+  }
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
@@ -215,8 +238,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     };
   }, [raceId]);
 
-  console.log("rerender");
-
   const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -248,14 +269,19 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       }
       if (raceData.startTime && statusRef.current == "waiting") {
         statusRef.current = "active";
+        setGameStatus("starting");
+        const delay = raceData.startTime - Date.now();
         setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
           finishTimeoutRef.current = setTimeout(() => {
             TyperRef.current?.End();
             setGameStatus("finished");
+            setCountDown(null);
+            clearRefsForNewGame();
           }, 30000);
-        }, Math.max(raceData.startTime - Date.now(), 0));
+        }, Math.max(delay, 0));
+        startCountDownFrom(delay / 1000);
       }
     })();
     const currentRound = roundCount;
@@ -277,9 +303,22 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   }
 
   return (
-    <div id="practiceContainer" className="componentContainer">
+    <div className="componentContainer">
+      <div className="TrafficLight card">
+        <div
+          className={countDown == null || countDown > 2 ? "active" : ""}
+        ></div>
+        <div
+          className={
+            countDown && countDown <= 2 && countDown > 0 ? "active" : ""
+          }
+        ></div>
+        <div className={countDown == 0 ? "active" : ""}></div>
+      </div>
       <div id="raceContainer" className="card flexColumnGap">
-        <p id="raceOn">{statuses[gameStatus]}</p>
+        <p className="raceOn">
+          {statuses[gameStatus]} {gameStatus == "starting" ? countDown : ""}
+        </p>
         <div className="RacetrackContainer">
           <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
           {raceData?.players.map((id) => {

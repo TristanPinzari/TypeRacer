@@ -15,12 +15,13 @@ export interface TyperMethods {
   End: () => void;
 }
 
-type GameStatus = "waiting" | "active" | "finished";
+type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
   waiting: "Waiting for more players...",
-  active: "Race in progress!",
-  finished: "Race complete!",
+  starting: "Starting in ",
+  active: "The race is on!",
+  finished: "Race over!",
 };
 
 function addPlayerToRows() {
@@ -128,9 +129,31 @@ function PrivateRace({
     uploader: "",
     type: "",
   });
+  const [countDown, setCountDown] = useState<number | null>(null);
 
   const TyperRef = useRef<TyperMethods>(null);
   const lastStatusRef = useRef("waiting");
+  const gameStatusToActiveTimeoutRef =
+    useRef<ReturnType<typeof setTimeout>>(null);
+  const countDownIntervalRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  function clearRefsForNewGame() {
+    const refsToClear = [gameStatusToActiveTimeoutRef, countDownIntervalRef];
+    for (const ref of refsToClear) {
+      if (ref.current) {
+        clearTimeout(ref.current);
+        ref.current = null;
+      }
+    }
+  }
+
+  function startCountDownFrom(seconds: number) {
+    seconds = Math.round(seconds);
+    setCountDown(seconds);
+    countDownIntervalRef.current = setInterval(() => {
+      setCountDown((s) => (s == null ? null : s > 0 ? s - 1 : 0));
+    }, 1000);
+  }
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
@@ -289,6 +312,14 @@ function PrivateRace({
         console.error("Execution failed:", error);
         setPageState("failed");
       }
+      // In case the host ends the race before it even starts.
+      if (
+        raceData.status == "finished" &&
+        lastStatusRef.current != "finished"
+      ) {
+        setCountDown(null);
+        clearRefsForNewGame();
+      }
       // Status switched to active
       if (
         raceData.status == "active" &&
@@ -296,10 +327,13 @@ function PrivateRace({
         lastStatusRef.current == "waiting"
       ) {
         lastStatusRef.current = "active";
-        setTimeout(() => {
+        const delay = raceData.startTime - Date.now();
+        setGameStatus("starting");
+        gameStatusToActiveTimeoutRef.current = setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
-        }, Math.max(raceData.startTime - Date.now(), 0));
+        }, Math.max(delay, 0));
+        startCountDownFrom(delay / 1000);
       }
       // Status switched to finished
       if (raceData.status == "finished" && lastStatusRef.current == "active") {
@@ -327,32 +361,22 @@ function PrivateRace({
   }
 
   return (
-    <div id="practiceContainer" className="componentContainer">
-      {raceData?.host == playerId && (
+    <div className="componentContainer">
+      <div className="TrafficLight card">
         <div
-          className="card"
-          style={{
-            width: "fit-content",
-            display: "flex",
-            justifyContent: "center",
-            gap: "1rem",
-            padding: "1rem",
-          }}
-        >
-          Invite your friends with link:
-          <a style={{ textDecoration: "underline" }}>
-            {window.location.href + "race?id=" + raceId}
-          </a>
-          <FaCopy
-            style={{ cursor: "pointer" }}
-            onClick={() =>
-              copyToClipboard(window.location.href + "race?id=" + raceId)
-            }
-          />
-        </div>
-      )}
+          className={countDown == null || countDown > 2 ? "active" : ""}
+        ></div>
+        <div
+          className={
+            countDown && countDown <= 2 && countDown > 0 ? "active" : ""
+          }
+        ></div>
+        <div className={countDown == 0 ? "active" : ""}></div>
+      </div>
       <div id="raceContainer" className="card flexColumnGap">
-        <p id="raceOn">{statuses[gameStatus]}</p>
+        <p className="raceOn">
+          {statuses[gameStatus]} {gameStatus == "starting" ? countDown : ""}
+        </p>
         <div className="RacetrackContainer">
           <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
           {raceData?.players.map((id) => {
@@ -373,7 +397,7 @@ function PrivateRace({
           </button>
           {raceData?.host == playerId && raceData?.status == "waiting" && (
             <button
-              className="mediumButton"
+              className="mediumButton secondary"
               onClick={() =>
                 raceId
                   ? startRace(raceId)
@@ -385,7 +409,7 @@ function PrivateRace({
           )}
           {raceData?.host == playerId && raceData?.status == "active" && (
             <button
-              className="mediumButton"
+              className="mediumButton secondary"
               onClick={() =>
                 raceId
                   ? endRace(raceId)
@@ -448,6 +472,28 @@ function PrivateRace({
           </div>
         )}
       </div>
+      {raceData?.host == playerId && (
+        <div
+          className="card"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "1rem",
+            padding: "1rem",
+          }}
+        >
+          Invite your friends with link:
+          <a style={{ textDecoration: "underline" }}>
+            {window.location.href + "?id=" + raceId}
+          </a>
+          <FaCopy
+            style={{ cursor: "pointer" }}
+            onClick={() =>
+              copyToClipboard(window.location.href + "?id=" + raceId)
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

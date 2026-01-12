@@ -206,6 +206,12 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+      if (raceStarted) {
+        inputRef.current?.focus();
+      }
+    }, [raceStarted]);
+
     function HandleChange(e: React.ChangeEvent<HTMLInputElement>) {
       const value = e.target.value;
       const isCurrentWordCorrect =

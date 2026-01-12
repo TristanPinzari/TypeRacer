@@ -83,9 +83,9 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
   }
 
   return (
-    <div id="practiceContainer" className="componentContainer">
+    <div className="componentContainer">
       <div id="raceContainer" className="card flexColumnGap">
-        <p id="raceOn">The race is on! Type the text below:</p>
+        <p className="raceOn">The race is on! Type the text below:</p>
         <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
         <Typer
           key={roundCount}
