@@ -378,7 +378,11 @@ function PrivateRace({
           {statuses[gameStatus]} {gameStatus == "starting" ? countDown : ""}
         </p>
         <div className="RacetrackContainer">
-          <Racetrack wpm={raceValues.wpm} progress={raceValues.progress} />
+          <Racetrack
+            you={true}
+            wpm={raceValues.wpm}
+            progress={raceValues.progress}
+          />
           {raceData?.players.map((id) => {
             if (id != playerId) {
               return <PublicRacetrack key={id} playerId={id} />;

@@ -244,12 +244,22 @@ body,
   left: calc(100% * var(--progress));
   transform: translateX(calc(-100% * var(--progress)));
   height: 100%;
-  aspect-ratio: 1;
-  background-image: url("assets/basic-red.svg");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: bottom;
   transition: 0.1s;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.Racetrack .text {
+  align-self: center;
+}
+
+.Racetrack .text .span {
+  color: var(--text-muted);
+}
+
+.Racetrack .car {
+  height: 50%;
 }
 
 .Racetrack > :nth-child(2) {
@@ -494,17 +504,21 @@ body,
 }
 
 .TrafficLight > :first-child {
+  --light-color: var(--danger);
   background-color: var(--danger);
 }
 
 .TrafficLight > :nth-child(2) {
-  background-color: rgb(209, 209, 0);
+  --light-color: rgb(206, 206, 22);
+  background-color: rgb(206, 206, 22);
 }
 
 .TrafficLight > :last-child {
+  --light-color: var(--success);
   background-color: var(--success);
 }
 
 .TrafficLight > .active {
   opacity: 1;
+  box-shadow: 0 0 7.5px var(--light-color);
 }
