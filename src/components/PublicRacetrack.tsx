@@ -11,7 +11,6 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
         import.meta.env.VITE_APPWRITE_DATABASE_ID
       }.tables.players.rows.${playerId}`,
       (response) => {
-        console.log(response);
         setStats({
           wpm: response.payload.wpm,
           progress: response.payload.progress,
@@ -20,7 +19,6 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
     ) as unknown as () => void;
     return () => {
       if (typeof unsubscribe === "function") {
-        console.log("uunsubscirbed");
         unsubscribe();
       }
     };
