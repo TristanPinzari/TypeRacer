@@ -20,6 +20,8 @@ export default async ({ req, res, log, error }) => {
     return args.every((arg) => arg !== undefined && arg !== null);
   }
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   async function GetRandomText(onlyId) {
     try {
       const initialView = await tablesDB.listRows({
@@ -159,6 +161,7 @@ export default async ({ req, res, log, error }) => {
                 data: { status: "active" },
               });
             }, 5000);
+            sleep(5000);
           } else {
             tablesDB.updateRow({
               databaseId: process.env.APPWRITE_DATABASE_ID,
