@@ -18,7 +18,7 @@ type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
   waiting: "Waiting for more players...",
-  starting: "Starting in ",
+  starting: "Starting",
   active: "The race is on!",
   finished: "Race over!",
 };
@@ -76,20 +76,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   const [countDown, setCountDown] = useState<number | null>(null);
 
   const TyperRef = useRef<TyperMethods>(null);
-  const statusRef = useRef("waiting");
+  const lastStatusRef = useRef("waiting");
   const gameStatusToActiveTimeoutRef =
     useRef<ReturnType<typeof setTimeout>>(null);
   const countDownIntervalRef = useRef<ReturnType<typeof setInterval>>(null);
-
-  function clearRefsForNewGame() {
-    const refsToClear = [gameStatusToActiveTimeoutRef, countDownIntervalRef];
-    for (const ref of refsToClear) {
-      if (ref.current) {
-        clearTimeout(ref.current);
-        ref.current = null;
-      }
-    }
-  }
 
   function startCountDownFrom(seconds: number) {
     seconds = Math.round(seconds);
@@ -216,6 +206,8 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           rowId: raceId,
         });
         setRaceData(newRaceData as unknown as Race);
+        lastStatusRef.current = newRaceData.status;
+        setGameStatus(newRaceData.status);
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
@@ -237,8 +229,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       }
     };
   }, [raceId]);
-
-  const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!raceData) return;
@@ -267,29 +257,23 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Execution failed:", error);
         setPageState("failed");
       }
-      if (raceData.startTime && statusRef.current == "waiting") {
-        statusRef.current = "active";
+      console.log(raceData.status, lastStatusRef.current);
+      // Status switched to starting
+      if (raceData.status == "starting" && lastStatusRef.current == "waiting") {
+        lastStatusRef.current = "starting";
         setGameStatus("starting");
-        const delay = raceData.startTime - Date.now();
-        setTimeout(() => {
+      }
+      // Status switched to active
+      if (raceData.status == "active" && lastStatusRef.current == "starting") {
+        lastStatusRef.current = "active";
+        setGameStatus("starting");
+        gameStatusToActiveTimeoutRef.current = setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
-          finishTimeoutRef.current = setTimeout(() => {
-            TyperRef.current?.End();
-            setGameStatus("finished");
-            setCountDown(null);
-            clearRefsForNewGame();
-          }, 30000);
-        }, Math.max(delay, 0));
-        startCountDownFrom(delay / 1000);
+        }, 5000);
+        startCountDownFrom(5);
       }
     })();
-    const currentRound = roundCount;
-    return () => {
-      if (currentRound != roundCount && finishTimeoutRef.current) {
-        clearTimeout(finishTimeoutRef.current);
-      }
-    };
   }, [raceData, roundCount]);
 
   if (pageState == "loading" || pageState == "failed") {
@@ -317,7 +301,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       </div>
       <div id="raceContainer" className="card flexColumnGap">
         <p className="raceOn">
-          {statuses[gameStatus]} {gameStatus == "starting" ? countDown : ""}
+          {statuses[gameStatus]}{" "}
+          {gameStatus == "starting"
+            ? (countDown ? " in " + countDown : "soon") + "..."
+            : ""}
         </p>
         <div className="RacetrackContainer">
           <Racetrack

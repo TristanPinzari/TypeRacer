@@ -263,6 +263,7 @@ function PrivateRace({
           rowId: raceId,
         });
         setRaceData(newRaceData as unknown as Race);
+        lastStatusRef.current = newRaceData.status;
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
@@ -321,19 +322,18 @@ function PrivateRace({
         clearRefsForNewGame();
       }
       // Status switched to active
-      if (
-        raceData.status == "active" &&
-        raceData.startTime &&
-        lastStatusRef.current == "waiting"
-      ) {
-        lastStatusRef.current = "active";
-        const delay = raceData.startTime - Date.now();
+      if (raceData.status == "waiting" && lastStatusRef.current == "starting") {
+        lastStatusRef.current = "starting";
         setGameStatus("starting");
+      }
+      // Status switched to active
+      if (raceData.status == "active" && lastStatusRef.current == "starting") {
+        lastStatusRef.current = "active";
         gameStatusToActiveTimeoutRef.current = setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
-        }, Math.max(delay, 0));
-        startCountDownFrom(delay / 1000);
+        }, 5000);
+        startCountDownFrom(5000);
       }
       // Status switched to finished
       if (raceData.status == "finished" && lastStatusRef.current == "active") {
