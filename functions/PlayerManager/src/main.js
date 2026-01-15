@@ -70,9 +70,6 @@ export default async ({ req, res, log, error }) => {
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "players",
           rowId: playerId,
-          data: {
-            lastSeen: Date.now(),
-          },
         });
 
         return res.json({ playerId: playerId }, 200);
@@ -93,24 +90,6 @@ export default async ({ req, res, log, error }) => {
           rowId: data.playerId,
         });
 
-        return res.json({}, 200);
-      } catch (err) {
-        error("Error: " + err.message);
-        return res.json({ error: "Failed to fetch" }, 500);
-      }
-
-    case "updatePlayerLastSeen":
-      if (!hasValidArgs([data?.playerId])) {
-        return res.json({ error: "Missing parameters" }, 400);
-      }
-
-      try {
-        await tablesDB.updateRow({
-          databaseId: process.env.APPWRITE_DATABASE_ID,
-          tableId: "players",
-          rowId: data.playerId,
-          data: { lastSeen: Date.now() },
-        });
         return res.json({}, 200);
       } catch (err) {
         error("Error: " + err.message);
@@ -150,42 +129,43 @@ export default async ({ req, res, log, error }) => {
         return res.json({ error: "Missing parameters" }, 400);
       }
       try {
-        const now = Date.now();
-        const startingSoonBuffer = now + 5000;
-        const waitingRaces = await tablesDB.listRows({
-          databaseId: process.env.APPWRITE_DATABASE_ID,
-          tableId: "races",
-          queries: [Query.isNull("startTime"), Query.isNull("host")],
-        });
-        const startingRaces = await tablesDB.listRows({
+        const availableRaces = await tablesDB.listRows({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           queries: [
+            Query.equal("status", ["waiting", "starting"]),
             Query.isNull("host"),
-            Query.greaterThan("startTime", now),
-            Query.lessThan("startTime", startingSoonBuffer),
           ],
         });
-        const availableRaces = [...startingRaces.rows, ...waitingRaces.rows];
         let newRaceId = null;
         if (availableRaces.length > 0) {
           const race = availableRaces[0];
           const updatedPlayers = [...race.players, data.playerId];
           const updateData = { players: updatedPlayers };
           if (updatedPlayers.length === 2) {
-            updateData.startTime = Date.now() + 10000;
-          } else if (
-            updatedPlayers.length === 5 &&
-            race.startTime - Date.now() > 5000
-          ) {
-            updateData.startTime = Date.now() + 3000;
+            updateData.status = "starting";
+            tablesDB.updateRow({
+              databaseId: process.env.APPWRITE_DATABASE_ID,
+              tableId: "races",
+              rowId: race.$id,
+              data: updateData,
+            });
+            setTimeout(() => {
+              tablesDB.updateRow({
+                databaseId: process.env.APPWRITE_DATABASE_ID,
+                tableId: "races",
+                rowId: race.$id,
+                data: { status: "active" },
+              });
+            }, 5000);
+          } else {
+            tablesDB.updateRow({
+              databaseId: process.env.APPWRITE_DATABASE_ID,
+              tableId: "races",
+              rowId: race.$id,
+              data: updateData,
+            });
           }
-          await tablesDB.updateRow({
-            databaseId: process.env.APPWRITE_DATABASE_ID,
-            tableId: "races",
-            rowId: race.$id,
-            data: updateData,
-          });
           newRaceId = race.$id;
         } else {
           const newId = ID.unique();
@@ -282,14 +262,14 @@ export default async ({ req, res, log, error }) => {
           tableId: "races",
           rowId: data.raceId,
         });
-        if (race.startTime && race.status == "active") {
+        if (race.status == "active") {
           return res.json({ error: "Race is already ongoing." }, 400);
         }
         await tablesDB.updateRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           rowId: data.raceId,
-          data: { startTime: Date.now() + 3000, status: "active" },
+          data: { status: "active" },
         });
         return res.json({}, 200);
       } catch (error) {
@@ -313,7 +293,7 @@ export default async ({ req, res, log, error }) => {
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           rowId: data.raceId,
-          data: { startTime: null, status: "finished" },
+          data: { status: "finished" },
         });
         return res.json({}, 200);
       } catch (error) {
@@ -330,7 +310,7 @@ export default async ({ req, res, log, error }) => {
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "races",
           rowId: data.raceId,
-          data: { textId: newTextId, startTime: null, status: "waiting" },
+          data: { textId: newTextId, status: "waiting" },
         });
         return res.json({}, 200);
       } catch (error) {
