@@ -18,7 +18,7 @@ type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
   waiting: "Waiting for more players...",
-  starting: "Starting in ",
+  starting: "Starting",
   active: "The race is on!",
   finished: "Race over!",
 };
@@ -207,6 +207,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         });
         setRaceData(newRaceData as unknown as Race);
         lastStatusRef.current = newRaceData.status;
+        setGameStatus(newRaceData.status);
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
@@ -256,20 +257,21 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Execution failed:", error);
         setPageState("failed");
       }
+      console.log(raceData.status, lastStatusRef.current);
       // Status switched to starting
-      if (raceData.status == "waiting" && lastStatusRef.current == "starting") {
+      if (raceData.status == "starting" && lastStatusRef.current == "waiting") {
         lastStatusRef.current = "starting";
         setGameStatus("starting");
       }
       // Status switched to active
-      if (raceData.status == "starting" && lastStatusRef.current == "active") {
+      if (raceData.status == "active" && lastStatusRef.current == "starting") {
         lastStatusRef.current = "active";
         setGameStatus("starting");
         gameStatusToActiveTimeoutRef.current = setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
         }, 5000);
-        startCountDownFrom(5000);
+        startCountDownFrom(5);
       }
     })();
   }, [raceData, roundCount]);
@@ -299,7 +301,10 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       </div>
       <div id="raceContainer" className="card flexColumnGap">
         <p className="raceOn">
-          {statuses[gameStatus]} {gameStatus == "starting" ? countDown : ""}
+          {statuses[gameStatus]}{" "}
+          {gameStatus == "starting"
+            ? (countDown ? " in " + countDown : "soon") + "..."
+            : ""}
         </p>
         <div className="RacetrackContainer">
           <Racetrack
