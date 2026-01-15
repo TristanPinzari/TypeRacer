@@ -70,7 +70,7 @@ export default async ({ req, res, log, error }) => {
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "players",
           rowId: playerId,
-          data: {},
+          data: { raceId: null },
         });
 
         return res.json({ playerId: playerId }, 200);
