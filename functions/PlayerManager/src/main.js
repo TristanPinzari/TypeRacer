@@ -322,17 +322,36 @@ export default async ({ req, res, log, error }) => {
       }
 
     case "updateStats":
-      if (!hasValidArgs([data?.playerId, data?.wpm, data?.progress])) {
+      if (
+        !hasValidArgs([data?.playerId, data?.raceId, data?.wpm, data?.progress])
+      ) {
         return res.json({ error: "Missing parameters" }, 400);
       }
       try {
+        const updatedData = { wpm: data.wpm, progress: data.progress };
+        let place = null;
+        if (data.progress >= 1) {
+          const race = await tablesDB.getRow({
+            databaseId: process.env.APPWRITE_DATABASE_ID,
+            tableId: "races",
+            rowId: data.raceId,
+          });
+          updatedData.place = race.finished.length + 1;
+          place = updatedData.place;
+          await tablesDB.updateRow({
+            databaseId: process.env.APPWRITE_DATABASE_ID,
+            tableId: "races",
+            rowId: data.raceId,
+            data: { finished: [...race.finished, playerId] },
+          });
+        }
         await tablesDB.updateRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "players",
           rowId: data.playerId,
-          data: { wpm: data.wpm, progress: data.progress },
+          data: updatedData,
         });
-        return res.json({}, 200);
+        return res.json({ place: place }, 200);
       } catch (error) {
         return res.json({ error: error }, 500);
       }

@@ -6,6 +6,7 @@ interface RacetrackProps {
   you?: boolean;
   progress: number;
   wpm: number;
+  place: number | null;
 }
 
 function Racetrack({
@@ -14,6 +15,7 @@ function Racetrack({
   you = false,
   progress = 0,
   wpm = 0,
+  place = null,
 }: RacetrackProps) {
   return (
     <div className="Racetrack">
@@ -30,6 +32,7 @@ function Racetrack({
         </div>
       </div>
       <p>{wpm} WPM</p>
+      <p>{place}</p>
     </div>
   );
 }
