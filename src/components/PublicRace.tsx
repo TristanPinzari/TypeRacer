@@ -112,6 +112,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
+              console.log("pulse succ", responseBody.place);
               setPlace(responseBody.place);
             } else {
               console.error(responseBody.error);

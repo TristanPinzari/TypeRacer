@@ -336,14 +336,16 @@ export default async ({ req, res, log, error }) => {
             tableId: "races",
             rowId: data.raceId,
           });
-          updatedData.place = race.finished.length + 1;
-          place = updatedData.place;
-          await tablesDB.updateRow({
-            databaseId: process.env.APPWRITE_DATABASE_ID,
-            tableId: "races",
-            rowId: data.raceId,
-            data: { finished: [...race.finished, playerId] },
-          });
+          if (!race.finished.includes(data.playerId)) {
+            updatedData.place = race.finished.length + 1;
+            place = updatedData.place;
+            await tablesDB.updateRow({
+              databaseId: process.env.APPWRITE_DATABASE_ID,
+              tableId: "races",
+              rowId: data.raceId,
+              data: { finished: [...race.finished, data.playerId] },
+            });
+          }
         }
         await tablesDB.updateRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
