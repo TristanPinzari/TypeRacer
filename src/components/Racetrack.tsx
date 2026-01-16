@@ -9,6 +9,8 @@ interface RacetrackProps {
   place: number | null;
 }
 
+const placeSuffixes = ["st", "nd", "rd"];
+
 function Racetrack({
   noText = false,
   name = "Guest",
@@ -31,8 +33,12 @@ function Racetrack({
           <img className="car" src={assets.car_red}></img>
         </div>
       </div>
-      <p>{wpm} WPM</p>
-      <p>{place}</p>
+      <div>
+        <p>
+          {place ? place + (place > 3 ? "th" : placeSuffixes[place - 1]) : " "}
+        </p>
+        <p>{wpm} WPM</p>
+      </div>
     </div>
   );
 }

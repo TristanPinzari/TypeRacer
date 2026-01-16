@@ -170,6 +170,7 @@ function PrivateRace({
               action: "updateStats",
               data: {
                 playerId: playerId,
+                raceId: raceId,
                 wpm: stats.wpm,
                 progress: stats.progress,
               },
@@ -178,6 +179,7 @@ function PrivateRace({
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
+              console.log("pulse succ", responseBody.place);
               setPlace(responseBody.place);
             } else {
               console.error(responseBody.error);
@@ -188,7 +190,7 @@ function PrivateRace({
         }
       })();
     },
-    [playerId]
+    [playerId, raceId]
   );
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen

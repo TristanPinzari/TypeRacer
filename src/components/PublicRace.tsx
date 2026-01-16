@@ -104,6 +104,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               action: "updateStats",
               data: {
                 playerId: playerId,
+                raceId: raceId,
                 wpm: stats.wpm,
                 progress: stats.progress,
               },
@@ -123,7 +124,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }
       })();
     },
-    [playerId]
+    [playerId, raceId]
   );
 
   const queueForRace = useCallback(async () => {
