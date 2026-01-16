@@ -6,7 +6,10 @@ interface RacetrackProps {
   you?: boolean;
   progress: number;
   wpm: number;
+  place: number | null;
 }
+
+const placeSuffixes = ["st", "nd", "rd"];
 
 function Racetrack({
   noText = false,
@@ -14,6 +17,7 @@ function Racetrack({
   you = false,
   progress = 0,
   wpm = 0,
+  place = null,
 }: RacetrackProps) {
   return (
     <div className="Racetrack">
@@ -29,7 +33,12 @@ function Racetrack({
           <img className="car" src={assets.car_red}></img>
         </div>
       </div>
-      <p>{wpm} WPM</p>
+      <div>
+        <p>
+          {place ? place + (place > 3 ? "th" : placeSuffixes[place - 1]) : " "}
+        </p>
+        <p>{wpm} WPM</p>
+      </div>
     </div>
   );
 }

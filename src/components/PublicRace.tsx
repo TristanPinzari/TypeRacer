@@ -64,6 +64,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
     accuracy: 0,
     time: "",
   });
+  const [place, setPlace] = useState<null | number>(null);
   const [roundCount, setRoundCount] = useState(0);
   const [gameStatus, setGameStatus] = useState<GameStatus>("waiting");
   const [gameText, setGameText] = useState<GameText>({
@@ -103,14 +104,18 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
               action: "updateStats",
               data: {
                 playerId: playerId,
+                raceId: raceId,
                 wpm: stats.wpm,
                 progress: stats.progress,
               },
             }),
           });
           if (response.status === "completed") {
-            if (response.responseStatusCode != 200) {
-              const responseBody = JSON.parse(response.responseBody);
+            const responseBody = JSON.parse(response.responseBody);
+            if (response.responseStatusCode == 200) {
+              console.log("pulse succ", responseBody.place);
+              setPlace(responseBody.place);
+            } else {
               console.error(responseBody.error);
             }
           }
@@ -119,7 +124,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }
       })();
     },
-    [playerId]
+    [playerId, raceId]
   );
 
   const queueForRace = useCallback(async () => {
@@ -311,6 +316,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
             you={true}
             wpm={raceValues.wpm}
             progress={raceValues.progress}
+            place={place}
           />
           {raceData?.players.map((id) => {
             if (id != playerId) {

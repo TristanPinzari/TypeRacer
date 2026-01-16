@@ -3,7 +3,7 @@ import { realtime } from "../lib/appwrite";
 import Racetrack from "./Racetrack";
 
 function PublicRacetrack({ playerId }: { playerId: string }) {
-  const [stats, setStats] = useState({ wpm: 0, progress: 0 });
+  const [stats, setStats] = useState({ wpm: 0, progress: 0, place: null });
 
   useEffect(() => {
     const unsubscribe = realtime.subscribe(
@@ -14,6 +14,7 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
         setStats({
           wpm: response.payload.wpm,
           progress: response.payload.progress,
+          place: response.payload.place,
         });
       }
     ) as unknown as () => void;
@@ -24,7 +25,9 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
     };
   }, [playerId]);
 
-  return <Racetrack wpm={stats.wpm} progress={stats.progress} />;
+  return (
+    <Racetrack wpm={stats.wpm} progress={stats.progress} place={stats.place} />
+  );
 }
 
 export default PublicRacetrack;
