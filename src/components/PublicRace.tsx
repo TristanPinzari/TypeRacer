@@ -92,6 +92,13 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
+      if (!playerId || !raceId) {
+        console.warn("Pulse skipped: playerId or raceId is missing", {
+          playerId,
+          raceId,
+        });
+        return;
+      }
       setRaceValues(stats);
       if (stats.progress == 1) {
         setGameStatus("finished");
@@ -113,7 +120,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
-              console.log("pulse succ", responseBody.place);
               setPlace(responseBody.place);
             } else {
               console.error(responseBody.error);
@@ -124,7 +130,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }
       })();
     },
-    [playerId, raceId]
+    [playerId, raceId],
   );
 
   const queueForRace = useCallback(async () => {
@@ -226,7 +232,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
       }.tables.races.rows.${raceId}`,
       (response) => {
         setRaceData(response.payload);
-      }
+      },
     ) as unknown as () => void;
 
     return () => {
@@ -263,7 +269,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Execution failed:", error);
         setPageState("failed");
       }
-      console.log(raceData.status, lastStatusRef.current);
       // Status switched to starting
       if (raceData.status == "starting" && lastStatusRef.current == "waiting") {
         lastStatusRef.current = "starting";

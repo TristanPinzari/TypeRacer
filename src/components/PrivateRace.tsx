@@ -158,6 +158,13 @@ function PrivateRace({
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
+      if (!playerId || !raceId) {
+        console.warn("Pulse skipped: playerId or raceId is missing", {
+          playerId,
+          raceId,
+        });
+        return;
+      }
       setRaceValues(stats);
       if (stats.progress == 1) {
         setGameStatus("finished");
@@ -191,7 +198,7 @@ function PrivateRace({
         }
       })();
     },
-    [playerId, raceId]
+    [playerId, raceId],
   );
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
@@ -283,9 +290,8 @@ function PrivateRace({
         import.meta.env.VITE_APPWRITE_DATABASE_ID
       }.tables.races.rows.${raceId}`,
       (response) => {
-        console.log(response.payload);
         setRaceData(response.payload);
-      }
+      },
     ) as unknown as () => void;
 
     return () => {
