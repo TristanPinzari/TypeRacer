@@ -1,11 +1,4 @@
-import {
-  Client,
-  ID,
-  TablesDB,
-  Query,
-  Functions,
-  ExecutionMethod,
-} from "node-appwrite";
+import { Client, ID, TablesDB, Query } from "node-appwrite";
 
 export default async ({ req, res, log, error }) => {
   // Initialization
@@ -121,7 +114,7 @@ export default async ({ req, res, log, error }) => {
             type: text.type,
             uploader: text.uploader,
           },
-          200
+          200,
         );
       } catch (error) {
         return res.json({ error: "Failed to fetch" }, 500);
