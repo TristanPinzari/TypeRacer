@@ -179,8 +179,9 @@ function PrivateRace({
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
-              console.log("pulse succ", responseBody.place);
-              setPlace(responseBody.place);
+              if (responseBody.place) {
+                setPlace(responseBody.place);
+              }
             } else {
               console.error(responseBody.error);
             }
@@ -268,6 +269,8 @@ function PrivateRace({
           rowId: raceId,
         });
         setRaceData(newRaceData as unknown as Race);
+        setPlace(null);
+        setGameStatus(newRaceData.status);
         lastStatusRef.current = newRaceData.status;
       } catch (error) {
         console.error("Error while retrieving race data:", error);
@@ -280,6 +283,7 @@ function PrivateRace({
         import.meta.env.VITE_APPWRITE_DATABASE_ID
       }.tables.races.rows.${raceId}`,
       (response) => {
+        console.log(response.payload);
         setRaceData(response.payload);
       }
     ) as unknown as () => void;
@@ -327,18 +331,14 @@ function PrivateRace({
         clearRefsForNewGame();
       }
       // Status switched to active
-      if (raceData.status == "waiting" && lastStatusRef.current == "starting") {
-        lastStatusRef.current = "starting";
-        setGameStatus("starting");
-      }
-      // Status switched to active
-      if (raceData.status == "active" && lastStatusRef.current == "starting") {
+      if (raceData.status == "active" && lastStatusRef.current == "waiting") {
         lastStatusRef.current = "active";
+        setGameStatus("starting");
         gameStatusToActiveTimeoutRef.current = setTimeout(() => {
           TyperRef.current?.startTimer();
           setGameStatus("active");
         }, 5000);
-        startCountDownFrom(5000);
+        startCountDownFrom(5);
       }
       // Status switched to finished
       if (raceData.status == "finished" && lastStatusRef.current == "active") {
@@ -348,6 +348,7 @@ function PrivateRace({
       }
       // Status switched to waiting
       if (raceData.status == "waiting" && lastStatusRef.current == "finished") {
+        setPlace(null);
         setGameStatus("waiting");
         setRoundCount(roundCount + 1);
         lastStatusRef.current = "waiting";
