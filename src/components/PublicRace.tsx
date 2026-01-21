@@ -92,6 +92,13 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
+      if (!playerId || !raceId) {
+        console.warn("Pulse skipped: playerId or raceId is missing", {
+          playerId,
+          raceId,
+        });
+        return;
+      }
       setRaceValues(stats);
       if (stats.progress == 1) {
         setGameStatus("finished");
@@ -113,7 +120,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
-              console.log("pulse succ", responseBody.place);
               setPlace(responseBody.place);
             } else {
               console.error(responseBody.error);
@@ -124,7 +130,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         }
       })();
     },
-    [playerId, raceId]
+    [playerId, raceId],
   );
 
   const queueForRace = useCallback(async () => {
@@ -203,6 +209,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   // Sets raceData and subscribes to it
   useEffect(() => {
     if (!raceId) return;
+    let subscription: { close: () => void };
     (async () => {
       try {
         const newRaceData = await tablesDB.getRow({
@@ -212,28 +219,25 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         });
         setRaceData(newRaceData as unknown as Race);
         setPlace(null);
+        setCountDown(null);
         setGameStatus(newRaceData.status);
         lastStatusRef.current = newRaceData.status;
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
       }
+
+      subscription = await realtime.subscribe(
+        `databases.${
+          import.meta.env.VITE_APPWRITE_DATABASE_ID
+        }.tables.races.rows.${raceId}`,
+        (response) => {
+          setRaceData(response.payload);
+        },
+      );
     })();
 
-    const unsubscribe = realtime.subscribe(
-      `databases.${
-        import.meta.env.VITE_APPWRITE_DATABASE_ID
-      }.tables.races.rows.${raceId}`,
-      (response) => {
-        setRaceData(response.payload);
-      }
-    ) as unknown as () => void;
-
-    return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
-    };
+    return () => subscription.close();
   }, [raceId]);
 
   useEffect(() => {
@@ -263,7 +267,6 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Execution failed:", error);
         setPageState("failed");
       }
-      console.log(raceData.status, lastStatusRef.current);
       // Status switched to starting
       if (raceData.status == "starting" && lastStatusRef.current == "waiting") {
         lastStatusRef.current = "starting";

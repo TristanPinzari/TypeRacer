@@ -18,7 +18,7 @@ export interface TyperMethods {
 type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
-  waiting: "Waiting for more players...",
+  waiting: "Waiting for host to start...",
   starting: "Starting in ",
   active: "The race is on!",
   finished: "Race over!",
@@ -158,6 +158,13 @@ function PrivateRace({
 
   const handlePulse = useCallback(
     (stats: Pulse) => {
+      if (!playerId || !raceId) {
+        console.warn("Pulse skipped: playerId or raceId is missing", {
+          playerId,
+          raceId,
+        });
+        return;
+      }
       setRaceValues(stats);
       if (stats.progress == 1) {
         setGameStatus("finished");
@@ -191,7 +198,7 @@ function PrivateRace({
         }
       })();
     },
-    [playerId, raceId]
+    [playerId, raceId],
   );
 
   // Generate an playerId for player, if didn't get the playerId switch to failed loadingscreen
@@ -261,6 +268,7 @@ function PrivateRace({
   // Sets raceData and subscribes to it
   useEffect(() => {
     if (!raceId) return;
+    let subscription: { close: () => void };
     (async () => {
       try {
         const newRaceData = await tablesDB.getRow({
@@ -276,23 +284,18 @@ function PrivateRace({
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
       }
+
+      subscription = await realtime.subscribe(
+        `databases.${
+          import.meta.env.VITE_APPWRITE_DATABASE_ID
+        }.tables.races.rows.${raceId}`,
+        (response) => {
+          setRaceData(response.payload);
+        },
+      );
     })();
 
-    const unsubscribe = realtime.subscribe(
-      `databases.${
-        import.meta.env.VITE_APPWRITE_DATABASE_ID
-      }.tables.races.rows.${raceId}`,
-      (response) => {
-        console.log(response.payload);
-        setRaceData(response.payload);
-      }
-    ) as unknown as () => void;
-
-    return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
-    };
+    return () => subscription.close();
   }, [raceId]);
 
   useEffect(() => {

@@ -330,8 +330,7 @@ export default async ({ req, res, log, error }) => {
             rowId: data.raceId,
           });
           if (!race.finished.includes(data.playerId)) {
-            updatedData.place = race.finished.length + 1;
-            place = updatedData.place;
+            place = race.finished.length + 1;
             await tablesDB.updateRow({
               databaseId: process.env.APPWRITE_DATABASE_ID,
               tableId: "races",
@@ -340,6 +339,7 @@ export default async ({ req, res, log, error }) => {
             });
           }
         }
+        updatedData.place = place;
         await tablesDB.updateRow({
           databaseId: process.env.APPWRITE_DATABASE_ID,
           tableId: "players",
