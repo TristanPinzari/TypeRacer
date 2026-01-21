@@ -209,6 +209,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
   // Sets raceData and subscribes to it
   useEffect(() => {
     if (!raceId) return;
+    let subscription: { close: () => void };
     (async () => {
       try {
         const newRaceData = await tablesDB.getRow({
@@ -225,22 +226,18 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
       }
+
+      subscription = await realtime.subscribe(
+        `databases.${
+          import.meta.env.VITE_APPWRITE_DATABASE_ID
+        }.tables.races.rows.${raceId}`,
+        (response) => {
+          setRaceData(response.payload);
+        },
+      );
     })();
 
-    const unsubscribe = realtime.subscribe(
-      `databases.${
-        import.meta.env.VITE_APPWRITE_DATABASE_ID
-      }.tables.races.rows.${raceId}`,
-      (response) => {
-        setRaceData(response.payload);
-      },
-    ) as unknown as () => void;
-
-    return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
-    };
+    return () => subscription.close();
   }, [raceId]);
 
   useEffect(() => {

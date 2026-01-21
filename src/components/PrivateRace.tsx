@@ -18,7 +18,7 @@ export interface TyperMethods {
 type GameStatus = "waiting" | "starting" | "active" | "finished";
 
 const statuses: Record<GameStatus, string> = {
-  waiting: "Waiting for more players...",
+  waiting: "Waiting for host to start...",
   starting: "Starting in ",
   active: "The race is on!",
   finished: "Race over!",
@@ -268,6 +268,7 @@ function PrivateRace({
   // Sets raceData and subscribes to it
   useEffect(() => {
     if (!raceId) return;
+    let subscription: { close: () => void };
     (async () => {
       try {
         const newRaceData = await tablesDB.getRow({
@@ -283,22 +284,18 @@ function PrivateRace({
         console.error("Error while retrieving race data:", error);
         setPageState("failed");
       }
+
+      subscription = await realtime.subscribe(
+        `databases.${
+          import.meta.env.VITE_APPWRITE_DATABASE_ID
+        }.tables.races.rows.${raceId}`,
+        (response) => {
+          setRaceData(response.payload);
+        },
+      );
     })();
 
-    const unsubscribe = realtime.subscribe(
-      `databases.${
-        import.meta.env.VITE_APPWRITE_DATABASE_ID
-      }.tables.races.rows.${raceId}`,
-      (response) => {
-        setRaceData(response.payload);
-      },
-    ) as unknown as () => void;
-
-    return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
-    };
+    return () => subscription.close();
   }, [raceId]);
 
   useEffect(() => {
