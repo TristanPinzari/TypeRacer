@@ -211,8 +211,9 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
           rowId: raceId,
         });
         setRaceData(newRaceData as unknown as Race);
-        lastStatusRef.current = newRaceData.status;
+        setPlace(null);
         setGameStatus(newRaceData.status);
+        lastStatusRef.current = newRaceData.status;
       } catch (error) {
         console.error("Error while retrieving race data:", error);
         setPageState("failed");

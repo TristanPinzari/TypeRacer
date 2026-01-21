@@ -179,8 +179,9 @@ function PrivateRace({
           if (response.status === "completed") {
             const responseBody = JSON.parse(response.responseBody);
             if (response.responseStatusCode == 200) {
-              console.log("pulse succ", responseBody.place);
-              setPlace(responseBody.place);
+              if (responseBody.place) {
+                setPlace(responseBody.place);
+              }
             } else {
               console.error(responseBody.error);
             }
@@ -268,6 +269,7 @@ function PrivateRace({
           rowId: raceId,
         });
         setRaceData(newRaceData as unknown as Race);
+        setPlace(null);
         lastStatusRef.current = newRaceData.status;
       } catch (error) {
         console.error("Error while retrieving race data:", error);
@@ -348,6 +350,7 @@ function PrivateRace({
       }
       // Status switched to waiting
       if (raceData.status == "waiting" && lastStatusRef.current == "finished") {
+        setPlace(null);
         setGameStatus("waiting");
         setRoundCount(roundCount + 1);
         lastStatusRef.current = "waiting";

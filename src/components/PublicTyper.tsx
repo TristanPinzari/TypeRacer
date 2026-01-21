@@ -203,6 +203,12 @@ const PublicTyper = forwardRef<TyperMethods, TyperProps>(
         time: "",
         accuracy: 0,
       });
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
