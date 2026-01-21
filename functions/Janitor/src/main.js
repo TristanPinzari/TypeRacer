@@ -20,5 +20,5 @@ export default async ({ req, res, log, error }) => {
     });
   }
 
-  return context.res.empty();
+  return res.empty();
 };
