@@ -6,7 +6,7 @@ interface RacetrackProps {
   you?: boolean;
   progress: number;
   wpm: number;
-  place: number | null;
+  place?: number | null;
 }
 
 const placeSuffixes = ["st", "nd", "rd"];
