@@ -19,4 +19,6 @@ export default async ({ req, res, log, error }) => {
       queries: [Query.lessThanEqual("$createdAt", date)],
     });
   }
+
+  return context.res.empty();
 };
