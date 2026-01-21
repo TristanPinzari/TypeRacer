@@ -218,6 +218,7 @@ function PublicRace({ navigate }: { navigate: (location: string) => void }) {
         });
         setRaceData(newRaceData as unknown as Race);
         setPlace(null);
+        setCountDown(null);
         setGameStatus(newRaceData.status);
         lastStatusRef.current = newRaceData.status;
       } catch (error) {

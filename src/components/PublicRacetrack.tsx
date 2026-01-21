@@ -16,7 +16,12 @@ function PublicRacetrack({ playerId }: { playerId: string }) {
           progress: response.payload.progress,
           place: response.payload.place,
         });
-      }
+        if (response.payload.progress >= 1) {
+          if (typeof unsubscribe === "function") {
+            unsubscribe();
+          }
+        }
+      },
     ) as unknown as () => void;
     return () => {
       if (typeof unsubscribe === "function") {
