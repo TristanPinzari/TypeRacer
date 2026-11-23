@@ -47,13 +47,10 @@ npm install
 npm run dev
 ```
 
-Create a `.env` file in the project root:
+Copy [.env.example](.env.example) to `.env` and fill in your own values:
 
-```
-VITE_APPWRITE_ENDPOINT=https://<region>.cloud.appwrite.io/v1
-VITE_APPWRITE_PROJECT_ID=<your project id>
-VITE_APPWRITE_DATABASE_ID=<your database id>
-VITE_APPWRITE_FUNC_PLAYER_MANAGER=<PlayerManager function id>
+```bash
+cp .env.example .env
 ```
 
 `.env` is gitignored. Anything prefixed with `VITE_` is bundled into the frontend, so never put secrets in it.
