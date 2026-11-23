@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# TypeRacer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time multiplayer typing game. Race other players, practice on your own, or create a private racetrack and share the link with friends.
 
-Currently, two official plugins are available:
+**Live demo:** https://tristanpinzari.github.io/TypeRacer
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+> **Note:** the backend costs money to run, so it may be disabled. If it is, the demo will load but races won't work.
 
-## React Compiler
+| Dark mode | Light mode |
+| --- | --- |
+| ![Menu in dark mode](src/assets/typeracer1.png) | ![Menu in light mode](src/assets/typeracer3.png) |
+| ![Race in dark mode](src/assets/typeracer2.png) | ![Race in light mode](src/assets/typeracer4.png) |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- **Public races:** get matched into a race with other players and see everyone's car move as they type.
+- **Private racetracks:** create a race, share the link (`?id=<raceId>`), and start it when your friends have joined.
+- **Typing test:** practice solo on a random passage.
+- **Live stats:** WPM updates for every racer in real time.
+- **Mistake feedback:** typos are highlighted as you type.
+- **Dark mode:** toggle from the menu.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- [React 19](https://react.dev) + TypeScript, built with [Vite](https://vite.dev)
+- [Appwrite](https://appwrite.io) for the database, realtime subscriptions and serverless functions
+- Deployed to GitHub Pages with `gh-pages`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## How it works
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The browser never writes race state directly. Joining, creating and starting races, and updating stats all go through the **PlayerManager** Appwrite function, which holds the API key. The client only reads race rows and subscribes to changes over Appwrite Realtime, which is what moves the cars.
+
+| Piece | Location | Purpose |
+| --- | --- | --- |
+| Frontend | [src/](src/) | Menu, practice, public and private race screens |
+| PlayerManager | [functions/PlayerManager/](functions/PlayerManager/) | Player and race lifecycle (`joinRace`, `createPrivateRace`, `startRace`, `endRace`, `updateStats`, ...) and random text selection |
+| Janitor | [functions/Janitor/](functions/Janitor/) | Scheduled cleanup that deletes `races` and `players` rows older than 24 hours |
+
+The Appwrite database uses three tables: `races`, `players` and `texts`.
+
+## Running locally
+
+Requires Node.js and an Appwrite project (Appwrite Cloud or self-hosted).
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Create a `.env` file in the project root:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+VITE_APPWRITE_ENDPOINT=https://<region>.cloud.appwrite.io/v1
+VITE_APPWRITE_PROJECT_ID=<your project id>
+VITE_APPWRITE_DATABASE_ID=<your database id>
+VITE_APPWRITE_FUNC_PLAYER_MANAGER=<PlayerManager function id>
+```
+
+`.env` is gitignored. Anything prefixed with `VITE_` is bundled into the frontend, so never put secrets in it.
+
+### Appwrite setup
+
+1. Create a database with the `races`, `players` and `texts` tables.
+2. Deploy the two functions from [functions/](functions/). Each needs these environment variables set in Appwrite:
+   - `APPWRITE_API_KEY`: a server API key with database access
+   - `APPWRITE_DATABASE_ID`: your database id
+3. Run Janitor on a schedule (for example daily) so stale rows get cleaned up.
+4. Add some passages to the `texts` table (`content`, `origin`, `author`, `type`, `uploader`).
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check and build to `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |
+| `npm run deploy` | Build and publish `dist/` to GitHub Pages |
