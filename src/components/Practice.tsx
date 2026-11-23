@@ -10,6 +10,7 @@ import { MdTimer } from "react-icons/md";
 import { AiOutlineAim } from "react-icons/ai";
 import LoadingScreen from "./LoadingScreen";
 import type { GameText, Pulse } from "../assets/interfaces";
+import { getOfflineText } from "../assets/offlineTexts";
 
 function Practice({ navigate }: { navigate: (location: string) => void }) {
   const [pageState, setPageState] = useState("loading");
@@ -51,12 +52,17 @@ function Practice({ navigate }: { navigate: (location: string) => void }) {
       });
       if (result.status === "completed") {
         const data = JSON.parse(result.responseBody);
-        setGameText(data);
-        setPageState("ready");
+        if (data.content) {
+          setGameText(data);
+          setPageState("ready");
+          return;
+        }
       }
+      throw new Error("No text returned");
     } catch (error) {
-      console.error("Execution failed:", error);
-      setPageState("failed");
+      console.error("Execution failed, using an offline text:", error);
+      setGameText(getOfflineText());
+      setPageState("ready");
     }
   };
 
